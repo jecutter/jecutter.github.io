@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
-<loc>https://jecutter.github.io//blog/test/</loc>
-<lastmod>2020-03-14T00:00:00-07:00</lastmod>
-</url>
-<url>
 <loc>https://jecutter.github.io//blog/</loc>
 </url>
 <url>
@@ -22,11 +18,11 @@
 </url>
 <url>
 <loc>https://jecutter.github.io//public/blog/</loc>
-<lastmod>2020-03-15T12:43:47-07:00</lastmod>
+<lastmod>2020-03-15T12:46:18-07:00</lastmod>
 </url>
 <url>
 <loc>https://jecutter.github.io//public/blog/test/</loc>
-<lastmod>2020-03-15T12:43:47-07:00</lastmod>
+<lastmod>2020-03-15T12:46:18-07:00</lastmod>
 </url>
 <url>
 <loc>https://jecutter.github.io//public/files/jacob_cutter_resume_3_13_2020.pdf</loc>
@@ -34,14 +30,14 @@
 </url>
 <url>
 <loc>https://jecutter.github.io//public/</loc>
-<lastmod>2020-03-15T12:43:47-07:00</lastmod>
+<lastmod>2020-03-15T12:46:18-07:00</lastmod>
 </url>
 <url>
 <loc>https://jecutter.github.io//public/papers/</loc>
-<lastmod>2020-03-15T12:43:47-07:00</lastmod>
+<lastmod>2020-03-15T12:46:18-07:00</lastmod>
 </url>
 <url>
 <loc>https://jecutter.github.io//public/privacy-policy/</loc>
-<lastmod>2020-03-15T12:43:47-07:00</lastmod>
+<lastmod>2020-03-15T12:46:18-07:00</lastmod>
 </url>
 </urlset>
