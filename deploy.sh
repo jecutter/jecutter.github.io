@@ -8,7 +8,7 @@ if [ $# -eq 1 ]
 fi
 
 # Build Jekyll site
-bundle exec jekyll build
+JEKYLL_ENV=production bundle exec jekyll build
 
 # Sync built Jekyll _site/ files to public Github repo
 rsync -Pav _site/ public/ --exclude="public/"
