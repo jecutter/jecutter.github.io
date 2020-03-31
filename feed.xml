@@ -1,1 +1,347 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io//" rel="alternate" type="text/html" /><updated>2020-03-28T11:58:03-07:00</updated><id>https://jecutter.github.io//feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author></feed>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io//feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io//" rel="alternate" type="text/html" /><updated>2020-03-30T17:18:26-07:00</updated><id>https://jecutter.github.io//feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">An RAPM Model to Assess NBA Players</title><link href="https://jecutter.github.io//blog/rapm-model/" rel="alternate" type="text/html" title="An RAPM Model to Assess NBA Players" /><published>2020-03-28T00:00:00-07:00</published><updated>2020-03-28T00:00:00-07:00</updated><id>https://jecutter.github.io//blog/rapm_model</id><content type="html" xml:base="https://jecutter.github.io//blog/rapm-model/">&lt;p&gt;If you are like me, you watch NBA basketball games with a healthy mixture of 
+enthusiasm for the game and skepticism of the media-driven narratives. In the last
+several years, I noticed a wide variety of advanced stats being thrown around by fans
+and media members alike, seemingly to justify their biased conclusions about players
+with highly subjective analysis. What’s worse – these stats are frequently used
+as definitive arguments for end-of-season awards, such as MVP.&lt;/p&gt;
+
+&lt;p&gt;You hear things like:
+“Player X is clearly superior to Player Y because he ranks higher in categories
+A, B, and C.” 
+Inevitably, you hear the response: “That may be true, but we all know stats A, B, and C
+don’t necessarily translate to winning basketball!”&lt;/p&gt;
+
+&lt;p&gt;It is interesting that even with such advanced stats, there is sometimes widespread
+disagreement about a player’s impact or value. 
+In my opinion, the crux of this problem is that there is minimal consideration of whether
+a stat is built to be &lt;strong&gt;descriptive&lt;/strong&gt; or &lt;strong&gt;predictive&lt;/strong&gt;, and are too often
+taken out of the applicable context, perhaps due to lack of transparency.
+The fact of the matter is that advanced stats, while derived from statistical models, 
+have their own built-in subjectivity.&lt;/p&gt;
+
+&lt;p&gt;Below, I will discuss my own attempt to “objectively” assess player impact by 
+creating a RAPM model. However, some words are in order about the existing
+landscape of advanced stats.&lt;/p&gt;
+
+&lt;h2 id=&quot;player-impact-metrics&quot;&gt;Player Impact Metrics&lt;/h2&gt;
+
+&lt;p&gt;Here are just some of the popular advanced player stats out there:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/per.html&quot;&gt;Hollinger’s Player Efficiency Rating (PER)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/ws.html&quot;&gt;Justin Kubatko’s Win Shares (WS)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Plus-Minus/Adjusted Plus-Minus/RAPM&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/bpm2.html&quot;&gt;Daniel Myers’ Box Plus-Minus (BPM)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://fansided.com/2016/09/08/player-tracking-plus-minus-2015-2016/&quot;&gt;Player Tracking Plus-Minus (PT-PM) by Andrew Johnson&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.espn.com/nba/story/_/id/10740818/introducing-real-plus-minus&quot;&gt;ESPN’s Real Plus-Minus (RPM), by Jeremias Engelmann&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.bball-index.com/player-impact-plus-minus/&quot;&gt;Player Impact Plus-Minus (PIPM) by Jacob Goldstein of BBall Index&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;These stats were chosen to give a broad survey of existing methodologies. Follow the
+links to get a more detailed description of each.&lt;/p&gt;
+
+&lt;p&gt;Advanced stats can be roughly categorized as follows:
+purely box-score based stats, Statistical Plus-Minus (SPM) models, and actual
+Plus-Minus models (usually based on RAPM).&lt;/p&gt;
+
+&lt;p&gt;PER and Win Shares belong to the first category. These all-in-one stats
+use fixed formulae to give a measure of player production from simple box score counting stats 
+(e.g. points, rebounds, assists, turnovers, steals, blocks, personal fouls).
+The validity of these models lie in the theoretical motivation behind the formulae, 
+which attempt to properly relate box score stats to points gained or lost.&lt;/p&gt;
+
+&lt;p&gt;BPM and PT-PM are SPM models in the sense that they are also based on box score stats, 
+however they are regressed against existing RAPM datasets to determine the coefficients which 
+weight each feature (RAPM, a variant of plus-minus, will be discussed below). In other words, SPM
+models are linear estimators of RAPM.&lt;/p&gt;
+
+&lt;p&gt;It is easy to see why box-score based stats are considered limited; this can’t possibly 
+encompass the entirety of a player’s impact! Is grabbing a defensive rebound over your teammate 
+more valuable than setting a screen that opens up a shot for Stephen Curry? If a blocked shot
+goes right back to the opposing team for a put-back, is that block more valuable than solid 
+man-on-man defense?&lt;/p&gt;
+
+&lt;p&gt;We would like to capture a player’s intangibles, or anything that is not shown
+by the box score. Plus-Minus based stats may be used for this purpose, since they 
+are based purely on overall team success when the player is on the floor. 
+From standard Plus-Minus came Adjusted Plus-Minus and its successor RAPM, which is the basis 
+for the other advanced stats above (RPM and PIPM). Let’s take a deeper look at what this means, 
+and why this technique is so prominent in basketball analytics.&lt;/p&gt;
+
+&lt;h2 id=&quot;what-is-regularized-adjusted-plus-minus&quot;&gt;What is Regularized Adjusted Plus-Minus?&lt;/h2&gt;
+
+&lt;p&gt;The original &lt;strong&gt;Plus-Minus&lt;/strong&gt; stat is simply the point differential a team experiences when a player
+is on the floor (i.e. points scored by the team minus points scored against the team).
+However, it is well-established that this metric is deceptive, since a player surrounded
+by highly skilled teammates will have an inflated Plus-Minus.&lt;/p&gt;
+
+&lt;p&gt;To answer this, an &lt;strong&gt;Adjusted Plus-Minus (APM)&lt;/strong&gt; was created to account for these effects.
+This essentially means creating a &lt;script type=&quot;math/tex&quot;&gt;n \times m&lt;/script&gt; matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; of &lt;em&gt;n&lt;/em&gt; stints/possessions by &lt;em&gt;m&lt;/em&gt; 
+players involved in all those possessions. We can assign entries to &lt;script type=&quot;math/tex&quot;&gt;1&lt;/script&gt; if the player is on offense 
+in the possession, &lt;script type=&quot;math/tex&quot;&gt;-1&lt;/script&gt; if on defense, and &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt; if not on the floor. We can then formulate a matrix
+equation to solve for the coefficients &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; that give the resulting point differentials &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt;:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;Y = X \beta \\
+X^T Y = X^T X \beta \\
+\beta = (X^T X)^{-1} X^T Y&lt;/script&gt;
+
+&lt;p&gt;We then approximate the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients by solving for the least-squares solution to 
+the matrix equation. This yields &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; values which actually represent the player contribution, 
+&lt;em&gt;removing the effect of teammates and opposing players&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;These coefficients are the player APM values. However, it was found that because of multicollinearity
+between players, the results have enormous variance and essentially result in a meaningless 
+stat. Luckily, there is a Bayesian filtering technique for dealing with this very issue: 
+&lt;em&gt;ridge regression&lt;/em&gt;. This is a well-known method for penalizing outlier values back to the central value,
+to reduce variance at the expense of bias.&lt;/p&gt;
+
+&lt;p&gt;Ridge regression is performed by modifying the least squares formulation with a diagonal perturbation matrix &lt;script type=&quot;math/tex&quot;&gt;\lambda I&lt;/script&gt;:&lt;/p&gt;
+
+&lt;script type=&quot;math/tex; mode=display&quot;&gt;\beta = (X^T Y + \lambda I)^{-1} X^T Y&lt;/script&gt;
+
+&lt;p&gt;The &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt; value is a model hyperparameter that must be tuned to stabilize the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt;
+coefficients, but without introducing an enormous bias. Note that in the limit that &lt;script type=&quot;math/tex&quot;&gt;\lambda \to 0&lt;/script&gt;, we 
+recover least squares; in the limit &lt;script type=&quot;math/tex&quot;&gt;\lambda \to \infty&lt;/script&gt;, &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; shrinks to &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;In this case, the resulting &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients are the RAPM values, or the &lt;strong&gt;Regularized Adjusted Plus-Minus&lt;/strong&gt;
+for each player. To be clear, however, these values are no longer absolute &lt;em&gt;points added&lt;/em&gt;. This
+regularization technique results in coefficients that are scaled by a factor dependent on &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt;.
+The RAPM values should therefore be taken as a relative stat, or a differential contribution.&lt;/p&gt;
+
+&lt;h2 id=&quot;harvesting-matchups-from-play-by-play-data&quot;&gt;Harvesting Matchups from Play-by-Play Data&lt;/h2&gt;
+
+&lt;p&gt;In order to create my own RAPM model, I needed to construct a matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; as explained above,
+as well as the point differential resulting from each row (each &lt;em&gt;matchup stint&lt;/em&gt;).
+I performed the following procedure:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Scrape play-by-play data from all NBA games over a number of years&lt;/li&gt;
+  &lt;li&gt;Parse the PBP data into &lt;em&gt;stints&lt;/em&gt;, or matchups between player lineups that may last 
+a number of possessions&lt;/li&gt;
+  &lt;li&gt;Calculate the point differential resulting from each stint, and from that
+the &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt; array (which is actually plus-minus per 100 possessions)&lt;/li&gt;
+  &lt;li&gt;Create a matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; with &lt;script type=&quot;math/tex&quot;&gt;n&lt;/script&gt; stints (rows) and &lt;script type=&quot;math/tex&quot;&gt;m&lt;/script&gt; NBA players (columns)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;To scrape the data, I used a Selenium web driver in Python to parse
+play-by-play data from &lt;a href=&quot;https://stats.nba.com/game/0021600001/playbyplay/&quot;&gt;NBA.com&lt;/a&gt;. 
+These tables track the score and provide raw text data for analyzing the content of each
+play. In addition, the starting lineup for each quarter was fetched separately, allowing 
+for player rotations to be tracked throughout a game. This is crucial for monitoring which 
+lineups are out on the floor at any time.&lt;/p&gt;
+
+&lt;p&gt;Note that the full scraping and wrangling codes can be 
+&lt;a href=&quot;https://github.com/jecutter/nba-data-models&quot;&gt;found at my Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;figure&gt;
+  
+  &lt;a href=&quot;/files/rapm_model/example_stint_table.png&quot;&gt;
+    &lt;img src=&quot;/files/rapm_model/example_stint_table.png&quot; alt=&quot;A figure with a caption&quot; /&gt;
+  &lt;/a&gt;
+  
+  
+  &lt;figcaption&gt;An example table of lineup matchup stints as a Pandas dataframe. Note that
+	the raw point differential, number of possessions for each stint, and plus-minus 
+	per 100 possessions are shown.&lt;/figcaption&gt;
+  
+&lt;/figure&gt;
+
+&lt;p&gt;Once we’ve isolated each matchup, we can parse the lineups into individual players
+for the home and away teams. Since we are taking the results of a stint, rather than
+single possessions, each team has been on both offense and defense. Therefore, we
+give players a matrix entry of &lt;script type=&quot;math/tex&quot;&gt;1&lt;/script&gt; (home team lineup), &lt;script type=&quot;math/tex&quot;&gt;-1&lt;/script&gt; (away team lineup), 
+or &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt; (not on the floor). We then take &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt; to be the home team plus-minus per
+100 possessions. This can be done with a Python function as shown below:&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;GenerateMatchupMatrix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;df&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;player_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;matchup_plus_minus&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;rapm_matrix&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;zeros&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shape&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;df&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dtype&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stint&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;df&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;iterrows&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\r&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;On Stint &lt;/span&gt;&lt;span class=&quot;si&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;i...&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;%&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;sys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stdout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flush&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        
+        &lt;span class=&quot;n&quot;&gt;matchup_plus_minus&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stint&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ht_pm_ph&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;f_ht_p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f_allp_ind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f_htl_ind&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;intersect1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stint&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ht_lineup&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;','&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;return_indices&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;True&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;rapm_matrix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f_allp_ind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;f_vt_p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f_allp_ind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f_vtl_ind&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;np&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;intersect1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;player_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;stint&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vt_lineup&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;','&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;return_indices&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;True&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;rapm_matrix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f_allp_ind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; Finished!'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rapm_matrix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;matchup_plus_minus&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Once we have &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; and &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt;, we can build a ridge regression model to 
+estimate the coefficients &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;developing-a-ridge-regression-model&quot;&gt;Developing a Ridge Regression Model&lt;/h2&gt;
+
+&lt;p&gt;In order to optimize our ridge regression model, we will use the matchup matrix
+&lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; and matchup point differential &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt; as our training data and perform
+&lt;em&gt;k&lt;/em&gt;-fold cross-validation to use the training data itself for validation.
+This is important, since we have only 3 seasons of NBA data (2017-2019).&lt;/p&gt;
+
+&lt;p&gt;In Python, we use the Ridge model from scikit-learn along with the GridSearchCV
+method to perform cross-validation on a comprehensive set of &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt; parameters
+(Note: &lt;script type=&quot;math/tex&quot;&gt;\lambda \equiv \alpha&lt;/script&gt; in the Ridge model).&lt;/p&gt;
+
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;x_train&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rapm_matrix&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;y_train&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;matchup_plus_minus&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;ridge_reg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Ridge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;alphas&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;param_grid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'alpha'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;alphas&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;grid_search&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;GridSearchCV&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ridge_reg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;param_grid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;grid_search&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x_train&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y_train&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'Optimized hyperparameters:'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;grid_search&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;best_params_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Optimized&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hyperparameters&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;'alpha'&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1500&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;While &lt;em&gt;k&lt;/em&gt;-fold cross-validation is typically used to set &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt;,
+we can also make sense of our choice by plotting the calculated RAPM as a
+function of &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt;.&lt;/p&gt;
+
+&lt;p&gt;It is clear that the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; values for small &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt; are highly unstable, as certain
+players experience a lot of variance. We can see that for our optimized &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt; parameter, 
+the best- and worst-RAPM players are stable and begin to converge to the mean.&lt;/p&gt;
+
+&lt;figure&gt;
+  
+  &lt;a href=&quot;/files/rapm_model/rapm_model_tuning.png&quot;&gt;
+    &lt;img src=&quot;/files/rapm_model/rapm_model_tuning.png&quot; alt=&quot;Plot showing the tuning of the ridge regression lambda parameter.&quot; /&gt;
+  &lt;/a&gt;
+  
+  
+  &lt;figcaption&gt;A plot showing the regularization of player RAPM ratings as a function of lambda. On the right, we see the tightening of the correlation between RAPM and raw player +/- as lambda is increased.&lt;/figcaption&gt;
+  
+&lt;/figure&gt;
+
+&lt;p&gt;With these justifications in mind, we can select our hyperparameter with some
+degree of confidence. However, it is important to point out that our typical notion
+of unbiased, out-of-sample model testing is compromised here; player performance varies from 
+season to season, and this model is meant to produce a &lt;em&gt;descriptive&lt;/em&gt; stat over seasons rather
+than a &lt;em&gt;predictive&lt;/em&gt; one. But more on that later.&lt;/p&gt;
+
+&lt;h2 id=&quot;evaluating-player-rapm-ratings&quot;&gt;Evaluating Player RAPM Ratings&lt;/h2&gt;
+
+&lt;p&gt;Let’s take a look at how various players fare in RAPM.&lt;/p&gt;
+
+&lt;p&gt;Along with play-by-play data, individual stats were scraped for NBA players, including
+net rating, BPM, and RPM (again, see my &lt;a href=&quot;https://github.com/jecutter/nba-data-models&quot;&gt;Github&lt;/a&gt;). 
+Note that &lt;em&gt;net rating&lt;/em&gt; is actually just the player’s raw plus-minus per 100 possessions, 
+which doesn’t take into account the caliber of a player’s supporting cast. 
+Below, we see the top 10 and bottom 10 players in RAPM, along with these other metrics.&lt;/p&gt;
+
+&lt;figure&gt;
+  
+  &lt;a href=&quot;/files/rapm_model/ordered_players_rapm.png&quot;&gt;
+    &lt;img src=&quot;/files/rapm_model/ordered_players_rapm.png&quot; alt=&quot;A figure with a caption&quot; /&gt;
+  &lt;/a&gt;
+  
+  
+  &lt;figcaption&gt;&lt;/figcaption&gt;
+  
+&lt;/figure&gt;
+
+&lt;p&gt;Note: only players averaging &lt;script type=&quot;math/tex&quot;&gt;&gt; 20&lt;/script&gt; minutes per game are shown.&lt;/p&gt;
+
+&lt;p&gt;It is clear that some players with great RAPM also have a high net rating, but this
+is not always the case. While there is overall correlation, we have to account for the
+fact that strengths/deficiencies are sometimes masked by context.&lt;/p&gt;
+
+&lt;p&gt;Overall, the results are sensible. Stephen Curry has league-leading RAPM
+over the last 3 years, which is largely considered to be the era of “small ball” and 3-point
+shooting that he ushered in. It is interesting that the top 5 players are &lt;em&gt;all&lt;/em&gt; guards – 
+smaller players, 3 of whom are considered excellent 2-way players and all of whom can 
+shoot 3-pointers and make plays for others. Notice also that some players, especially Damian Lillard 
+and Jrue Holiday, are highly underrated by ESPN’s RPM.&lt;/p&gt;
+
+&lt;p&gt;On the other hand, the players with the worst RAPM 
+tend to be either aging, inexperienced, or considered lazy on at least one end of the floor. 
+For instance, Trae Young is a rookie considered to be one of the worst defenders in the league.&lt;/p&gt;
+
+&lt;h2 id=&quot;comparing-with-other-advanced-stats&quot;&gt;Comparing with Other Advanced Stats&lt;/h2&gt;
+
+&lt;p&gt;To understand what we’ve calculated better, and how it relates to existing metrics, 
+we can examine correlations with a variety of box score and advanced stats.&lt;/p&gt;
+
+&lt;p&gt;A useful tool for doing this is to make a Pearson correlation heatmap. This allows
+us to examine relationships between a large number of features and potentially informs
+us on what dependencies to examine further.&lt;/p&gt;
+
+&lt;figure&gt;
+  
+  &lt;a href=&quot;/files/rapm_model/pearson_correlation_rapm.png&quot;&gt;
+    &lt;img src=&quot;/files/rapm_model/pearson_correlation_rapm.png&quot; alt=&quot;Plot showing Pearson correlation of RAPM with other advanced stats.&quot; /&gt;
+  &lt;/a&gt;
+  
+  
+  &lt;figcaption&gt;&lt;/figcaption&gt;
+  
+&lt;/figure&gt;
+
+&lt;p&gt;Shown in the matrix above are correlations between various player statistics averaged over
+the 2017-2019 seasons, including the previously discussed PER, BPM, RPM, and RAPM.
+The other abbreviated stats are: true shooting %, field goal attempts per 100 poss., 
+free throw rate, opponent field goal %, assist-to-turnover ratio, rebound rate, blocks
+per 100 poss., and steals per 100 poss.&lt;/p&gt;
+
+&lt;p&gt;We can summarize some interesting points from this table:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;PER has a much higher correlation with player usage and shot attempts than the other 
+advanced stats (presumably, it rewards players who simply attempt to carry 
+the offensive load)&lt;/li&gt;
+  &lt;li&gt;PER, BPM, and RPM all have a slight correlation with player height, while
+RAPM is completely uncorrelated with height&lt;/li&gt;
+  &lt;li&gt;Similarly, PER, BPM, and RPM give much more weight to rebounds and blocks
+than RAPM (interestingly, this is not as true for steals)&lt;/li&gt;
+  &lt;li&gt;RAPM is the most correlated with opponent field goal %, which
+serves as a proxy for man-on-man defense that is hard to quantify&lt;/li&gt;
+  &lt;li&gt;True shooting % appears to be less correlated with RAPM than the other stats,
+however this is also true for the free throw rate (note that free
+throws factor in to true shooting)&lt;/li&gt;
+  &lt;li&gt;PER and RPM are much more correlated with BPM than RAPM.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Taking all these observations together, it is reasonable to hypothesize that
+1) other advanced stats appear to favor big men, including stats that are typical
+for big men (e.g. rebounds and blocks), and 2) RPM, one of the most popular and 
+quoted advanced stats, appears to be highly dependent on box score stats. Why is this?&lt;/p&gt;
+
+&lt;p&gt;The explanation for this is that the RPM methodology, which involves calculating 
+RAPM with a 14-year dataset (which I have been unable to find), also involves
+the use of box-score priors. &lt;strong&gt;Bayesian priors&lt;/strong&gt; are used in the ridge regression to 
+constrain the range of &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; for various players, whose value is essentially 
+pre-estimated using their box score stats. While these priors are proprietary and not 
+publicly available, it appears that this component is significant.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusions&quot;&gt;Conclusions&lt;/h2&gt;
+
+&lt;p&gt;This exercise to create a minimally-biased player ranking is informative when comparing
+to the publicly available advanced stats, because it shows just how subjective these 
+models are.&lt;/p&gt;
+
+&lt;p&gt;By subjective, I am &lt;em&gt;not&lt;/em&gt; saying that the box-score based models are never useful. 
+In Bayesian statistics, it is common to employ Bayesian priors to constrain results.
+However, the choice of these priors and the importance of each feature is inherently subjective,
+and somewhat defeats the original purpose of the RAPM method: to measure a player’s overall impact 
+and intangibles. If man-on-man defense is considered less valuable than a block, if a rebound 
+is given more weight than a well-executed pass, and a taller player is given the edge over a 
+shorter one, then our model loses its context-independence.&lt;/p&gt;
+
+&lt;p&gt;The true power of metrics like ESPN’s RPM is its &lt;em&gt;predictive&lt;/em&gt; power. By regressing
+against a very large RAPM dataset to calculate priors, it can then predict a player’s
+future RAPM with better accuracy. However, RPM is often used as a &lt;em&gt;descriptive&lt;/em&gt; stat
+to explain why a current season’s box score stats, on which the model itself 
+is tuned, give a particular player an edge. This is circular, flawed logic.&lt;/p&gt;
+
+&lt;p&gt;As a descriptive stat, pure RAPM models may still be the most objective.
+It may not accurately tell us what impact a player will have next season, but yet 
+again, can any stat do that reliably given unavoidable year-to-year variations? 
+No all-in-one stat gives a perfect player assessment, and every stat must be used in context.&lt;/p&gt;</content><author><name>Jacob Cutter</name></author><summary type="html"></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://jecutter.github.io//files/rapm_model/steph_mccaw.jpg" /><media:content medium="image" url="https://jecutter.github.io//files/rapm_model/steph_mccaw.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
