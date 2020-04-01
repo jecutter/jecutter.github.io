@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-03-31T21:14:06-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-04-01T11:11:41-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
 &quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;With the expansion in popularity of NBA basketball over the years, an 
@@ -8,7 +8,7 @@ we can now ask questions like: “How many times did Klay Thompson dribble the b
 before shooting in the 3rd quarter? How many miles did he run on defense? 
 How many times did he shoot from beyond 24 feet?”&lt;/p&gt;
 
-&lt;p&gt;I recently spent some time scraping such advanced data from
+&lt;p&gt;I recently spent some time scraping such data from
 the web in order to do some exploratory analysis on NBA basketball players
 &lt;a href=&quot;https://github.com/jecutter/nba-data-models&quot;&gt;(see my Github for code)&lt;/a&gt;.
 One of the simplest questions we can ask is: what defines a player? Not in terms of 
@@ -25,12 +25,11 @@ cheap talent. With this motivation in mind, let’s see how such a model can be 
 
 &lt;h2 id=&quot;a-word-about-random-forest-classification&quot;&gt;A Word About Random Forest Classification&lt;/h2&gt;
 
-&lt;p&gt;A common tool used for regression and classification is the
-&lt;strong&gt;decision tree&lt;/strong&gt;, which essentially is an upside-down tree-like structure
-beginning with a &lt;em&gt;root&lt;/em&gt;. From this starting node, which includes the entire sample,
-the algorithm decides which of the input features/attributes provides the most 
-information for differentiating the data samples (i.e. players). The
-algorithm then splits the data on this feature.&lt;/p&gt;
+&lt;p&gt;A common tool used for regression and classification is the &lt;strong&gt;decision tree&lt;/strong&gt;, 
+which essentially is an upside-down tree-like structure beginning with a &lt;em&gt;root&lt;/em&gt;. 
+From this starting node, which includes the entire sample, the algorithm decides 
+which of the input features provides the most information for differentiating 
+the sample data (i.e. players). The algorithm then splits the data on this feature.&lt;/p&gt;
 
 &lt;p&gt;The formula for &lt;em&gt;information gain&lt;/em&gt; provided by a new feature is given by 
 the difference between the entropy for the current node, &lt;script type=&quot;math/tex&quot;&gt;E(X)&lt;/script&gt;, and weighted
@@ -52,12 +51,12 @@ a tree is “grown” in descending order of information gain. For a nice, detai
 explanation broken down using examples, see 
 &lt;a href=&quot;https://towardsdatascience.com/entropy-how-decision-trees-make-decisions-2946b9c18c8&quot;&gt;this article&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;Now, if we can grow a tree, why not grow a forest? A &lt;strong&gt;random forest&lt;/strong&gt; is a collection
-of many decision trees, which is highly advantageous for many problems.
-Not only is each tree a random sub-sample of the input training data
-(a sampling technique known as &lt;em&gt;bootstrapping&lt;/em&gt;), but each tree also uses
-a subset of input features. A vote is tallied from each tree’s prediction in order to 
-determine the overall prediction, essentially averaging over all estimators.&lt;/p&gt;
+&lt;p&gt;Now, if we can grow a tree, why not grow a forest? A &lt;strong&gt;random forest&lt;/strong&gt; is a 
+collection of many decision trees, which is highly advantageous for many problems.
+Each tree a random sub-sample of the input training data (a sampling technique 
+known as &lt;em&gt;bootstrapping&lt;/em&gt;), and each tree uses a subset of input features. 
+A vote is tallied from each tree’s prediction in order to determine the overall 
+prediction, essentially averaging over all estimators.&lt;/p&gt;
 
 &lt;p&gt;Below is a cartoon from 
 &lt;a href=&quot;https://towardsdatascience.com/from-a-single-decision-tree-to-a-random-forest-b9523be65147&quot;&gt;this article&lt;/a&gt; 
@@ -78,7 +77,7 @@ by Rosaria Silipo and Kathrin Melcher.&lt;/p&gt;
 &lt;p&gt;The strengths of this algorithm are that it can handle missing values, it automatically 
 accounts for relative feature importance, and it avoids overfitting by canceling out biases.&lt;/p&gt;
 
-&lt;p&gt;As we will see, our model will consist of 181 output labels (or classes), which
+&lt;p&gt;As we will see, our model will consist of 181 output labels, which
 is the number of veteran players who played for the last 4 complete NBA seasons
 (2016-2019). Not only are there many labels, but there are also many input features
 to differentiate style of play. What’s more, we only have 3 samples per label to work
@@ -163,7 +162,7 @@ Here, veterans are all players who played in &lt;em&gt;each&lt;/em&gt; season fr
 while rookies only played in the 2019 season.&lt;/p&gt;
 
 &lt;p&gt;I then divide the veteran dataset into a training set (3 seasons)
-and a testing set (the 2019 season), as out-of-sample testing set will be used to 
+and a testing set (the 2019 season), as out-of-sample testing will be used to 
 calculate the unbiased accuracy of our model. I also separate the training 
 and testing datasets into input features and output labels (the player names).&lt;/p&gt;
 
@@ -187,8 +186,7 @@ and testing datasets into input features and output labels (the player names).&l
 
 &lt;p&gt;In order to properly fit our input training data, it is also a good idea
 to scale the input features to unit variance and subtract their means.
-This may be overkill, since decision trees already weigh features appropriately,
-but it is a good habit for performing machine learning.&lt;/p&gt;
+This is a good habit when training machine learning algorithms to avoid bias.&lt;/p&gt;
 
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Scale features which will be used in model fitting
 # (for both training and testing datasets)
@@ -252,9 +250,8 @@ fluctuations in the other stats this is still a solid result.&lt;/p&gt;
 on any player not used in the training data to find their best player “comp”.&lt;/p&gt;
 
 &lt;p&gt;It is worth noting: this is &lt;em&gt;not&lt;/em&gt; a comparison of production or value. 
-All the features used in the model are &lt;em&gt;rate&lt;/em&gt; or &lt;em&gt;frequency&lt;/em&gt; stats, not
-performance metrics (other than defensive FGP). This is simply a comparison
-of play styles and overall similarity.&lt;/p&gt;
+Aside from defensive FGP, the features used in the model are &lt;em&gt;rate&lt;/em&gt; or &lt;em&gt;frequency&lt;/em&gt; 
+stats meant to characterize play style rather than performance.&lt;/p&gt;
 
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Format rookie dataset for input into the classifier and 
 # attempt to classify rookies by their most similar veteran counterpart
@@ -346,14 +343,13 @@ that these comparisons are sensible, let’s dive into an example.&lt;/p&gt;
 
 &lt;h2 id=&quot;an-example-comparison&quot;&gt;An Example Comparison&lt;/h2&gt;
 
-&lt;p&gt;Landry Shamet came into the league with low expectations, but was a pleasant
-surprise and made an early impact as a shooter on the L.A. Clippers.&lt;/p&gt;
+&lt;p&gt;Our classifier algorithm found Landry Shamet and Marco Belinelli to have 
+matching play styles. Shamet came into the league with low expectations, 
+but was a pleasant surprise and made an early impact as a shooter on the 
+L.A. Clippers. Belinelli is a veteran player also known for his exceptional 
+shooting skills off the bench.&lt;/p&gt;
 
-&lt;p&gt;Marco Belinelli is a veteran player known for his exceptional shooting skills
-off the bench.&lt;/p&gt;
-
-&lt;p&gt;Our classifier algorithm found them to have matching play styles. 
-We can simply plot these players in a number of feature spaces and 
+&lt;p&gt;We can simply plot these players in a number of feature spaces and 
 examine how similar they really are.&lt;/p&gt;
 
 &lt;figure&gt;
@@ -367,13 +363,13 @@ examine how similar they really are.&lt;/p&gt;
   
 &lt;/figure&gt;
 
-&lt;p&gt;As we can see, they are indeed very similar in stature. They are both 
-lanky shooting guards who not only like to shoot 3-pointers, but who
-both shoot relatively deep 3-pointers. They are both limited play-makers
-who get around half their shots off catch-and-shoot action (i.e. without
-dribbling before the shot). An interesting point is that Belinelli 
-tended to shoot more free throws over the last few years, which could 
-merely indicate that he is older and more experienced with drawing fouls.&lt;/p&gt;
+&lt;p&gt;As we can see, they are indeed very similar. They are both lanky 
+shooting guards who like to shoot deep 3-pointers. 
+They are both limited play-makers who get around half their shots from 
+catch-and-shoot action (i.e. without dribbling before the shot). 
+Belinelli tended to shoot more free throws over the last few years, 
+but this could merely indicate that he is older and more experienced 
+with drawing fouls.&lt;/p&gt;
 
 &lt;h2 id=&quot;why-is-this-useful&quot;&gt;Why is this useful?&lt;/h2&gt;
 
@@ -394,7 +390,7 @@ may indicate which players are closer to Jrue Holiday than James Harden.&lt;/p&g
 enthusiasm for the game and skepticism of the media-driven narratives. In the last
 several years, I noticed a wide variety of advanced stats being thrown around by fans
 and media members alike, seemingly to justify their biased conclusions about players
-with highly subjective analysis. What’s worse – these stats are frequently used
+with highly subjective analysis. What’s more, these stats are frequently used
 as definitive arguments for end-of-season awards, such as MVP.&lt;/p&gt;
 
 &lt;p&gt;You hear things like:
@@ -403,11 +399,10 @@ A, B, and C.”
 Inevitably, you hear the response: “That may be true, but we all know stats A, B, and C
 don’t necessarily translate to winning basketball!”&lt;/p&gt;
 
-&lt;p&gt;It is interesting that even with such advanced stats, there is sometimes widespread
-disagreement about a player’s impact or value. 
-In my opinion, the crux of this problem is that there is minimal consideration of whether
-a stat is built to be &lt;strong&gt;descriptive&lt;/strong&gt; or &lt;strong&gt;predictive&lt;/strong&gt;, and are too often
-taken out of the applicable context, perhaps due to lack of transparency.&lt;/p&gt;
+&lt;p&gt;Even with such advanced stats, there is sometimes widespread disagreement 
+about a player’s impact or value. In my opinion, the crux of this problem is 
+that these stats are often taken out of the applicable context, perhaps due 
+to lack of transparency.&lt;/p&gt;
 
 &lt;p&gt;Below, I will discuss my own attempt to “objectively” assess player impact by 
 creating a RAPM model. However, some words are in order about the existing
@@ -415,7 +410,7 @@ landscape of advanced stats.&lt;/p&gt;
 
 &lt;h2 id=&quot;player-impact-metrics&quot;&gt;Player Impact Metrics&lt;/h2&gt;
 
-&lt;p&gt;Here are just some of the popular advanced player stats out there:&lt;/p&gt;
+&lt;p&gt;Here are just &lt;em&gt;some&lt;/em&gt; of the popular advanced player stats out there:&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/per.html&quot;&gt;Hollinger’s Player Efficiency Rating (PER)&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/ws.html&quot;&gt;Justin Kubatko’s Win Shares (WS)&lt;/a&gt;&lt;/li&gt;
@@ -423,13 +418,13 @@ landscape of advanced stats.&lt;/p&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/bpm2.html&quot;&gt;Daniel Myers’ Box Plus-Minus (BPM)&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://fansided.com/2016/09/08/player-tracking-plus-minus-2015-2016/&quot;&gt;Player Tracking Plus-Minus (PT-PM) by Andrew Johnson&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.espn.com/nba/story/_/id/10740818/introducing-real-plus-minus&quot;&gt;ESPN’s Real Plus-Minus (RPM), by Jeremias Engelmann&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://www.bball-index.com/player-impact-plus-minus/&quot;&gt;Player Impact Plus-Minus (PIPM) by Jacob Goldstein of BBall Index&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.bball-index.com/player-impact-plus-minus/&quot;&gt;Player Impact Plus-Minus (PIPM), by Jacob Goldstein of BBall Index&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;These stats were chosen to give a broad survey of existing methodologies. Follow the
+&lt;p&gt;These were chosen to give a broad survey of existing methodologies. Follow the
 links to get a more detailed description of each.&lt;/p&gt;
 
-&lt;p&gt;Advanced stats can be roughly categorized as follows:
+&lt;p&gt;Such player impact stats can be roughly categorized as follows:
 purely box-score based stats, Statistical Plus-Minus (SPM) models, and actual
 Plus-Minus models (usually based on RAPM).&lt;/p&gt;
 
@@ -444,7 +439,7 @@ however they are regressed against existing RAPM datasets to determine the coeff
 weight each feature (RAPM, a variant of plus-minus, will be discussed below). In other words, SPM
 models are linear estimators of RAPM.&lt;/p&gt;
 
-&lt;p&gt;It is easy to see why box-score based stats are considered limited; this can’t possibly 
+&lt;p&gt;It is easy to see why box-score based stats are limited; this can’t possibly 
 encompass the entirety of a player’s impact! Is grabbing a defensive rebound over your teammate 
 more valuable than setting a screen that opens up a shot for Stephen Curry? If a blocked shot
 goes right back to the opposing team for a put-back, is that block more valuable than solid 
@@ -453,9 +448,9 @@ man-on-man defense?&lt;/p&gt;
 &lt;p&gt;We would like to capture a player’s intangibles, or anything that is not shown
 by the box score. Plus-Minus based stats may be used for this purpose, since they 
 are based purely on overall team success when the player is on the floor. 
-From standard Plus-Minus came Adjusted Plus-Minus and its successor RAPM, which is the basis 
-for the other advanced stats above (RPM and PIPM). Let’s take a deeper look at what this means, 
-and why this technique is so prominent in basketball analytics.&lt;/p&gt;
+RAPM, which is a successor of Plus-Minus, is the basis for the other advanced stats 
+above (RPM and PIPM). Let’s take a deeper look at what this means, and why this 
+technique is so prominent in basketball analytics.&lt;/p&gt;
 
 &lt;h2 id=&quot;what-is-regularized-adjusted-plus-minus&quot;&gt;What is Regularized Adjusted Plus-Minus?&lt;/h2&gt;
 
@@ -474,11 +469,11 @@ equation to solve for the coefficients &lt;script type=&quot;math/tex&quot;&gt;\
 X^T Y = X^T X \beta \\
 \beta = (X^T X)^{-1} X^T Y&lt;/script&gt;
 
-&lt;p&gt;We then approximate the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients by solving for the least-squares solution to 
+&lt;p&gt;We then approximate the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients by solving for the &lt;strong&gt;least-squares solution&lt;/strong&gt; to 
 the matrix equation. This yields &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; values which actually represent the player contribution, 
 &lt;em&gt;removing the effect of teammates and opposing players&lt;/em&gt;.&lt;/p&gt;
 
-&lt;p&gt;These coefficients are the player APM values. However, it was found that because of multicollinearity
+&lt;p&gt;These coefficients are the player APM values. However, because of multicollinearity
 between players, the results have enormous variance and essentially result in a meaningless 
 stat. Luckily, there is a Bayesian filtering technique for dealing with this very issue: 
 &lt;em&gt;ridge regression&lt;/em&gt;. This is a well-known method for penalizing outlier values back to the central value,
@@ -493,27 +488,27 @@ coefficients, but without introducing an enormous bias. Note that in the limit t
 recover least squares; in the limit &lt;script type=&quot;math/tex&quot;&gt;\lambda \to \infty&lt;/script&gt;, &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; shrinks to &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt;.&lt;/p&gt;
 
 &lt;p&gt;In this case, the resulting &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients are the RAPM values, or the &lt;strong&gt;Regularized Adjusted Plus-Minus&lt;/strong&gt;
-for each player. To be clear, however, these values are no longer absolute &lt;em&gt;points added&lt;/em&gt;. This
+for each player. To be clear, these values are no longer &lt;em&gt;absolute points added&lt;/em&gt;. This
 regularization technique results in coefficients that are scaled by a factor dependent on &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt;.
 The RAPM values should therefore be taken as a relative stat, or a differential contribution.&lt;/p&gt;
 
-&lt;p&gt;Circling back, how do our advanced stats incorporate RAPM? To be clear, SPM models like
-BPM and PT-PM use RAPM &lt;em&gt;strictly as an input&lt;/em&gt; to find the model coefficients. 
+&lt;p&gt;Circling back, how do our advanced stats incorporate RAPM? SPM models like
+BPM use RAPM &lt;em&gt;strictly as an input&lt;/em&gt; to find the model coefficients. 
 RPM and PIPM, on the other hand, are essentially “enhanced” RAPM models which use
 &lt;strong&gt;Bayesian priors&lt;/strong&gt; to constrain the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients based on a fit to &lt;em&gt;previous&lt;/em&gt;
 RAPM datasets. As we will discuss, this puts a potentially biased emphasis on box score stats.&lt;/p&gt;
 
 &lt;h2 id=&quot;harvesting-matchups-from-play-by-play-data&quot;&gt;Harvesting Matchups from Play-by-Play Data&lt;/h2&gt;
 
-&lt;p&gt;In order to create my own RAPM model, I needed to construct a matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; as explained above,
+&lt;p&gt;In order to create my own RAPM model, I constructed a matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; as explained above,
 as well as the point differential resulting from each row (each &lt;em&gt;matchup stint&lt;/em&gt;).
 I performed the following procedure:&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;Scrape play-by-play data from all NBA games over a number of years&lt;/li&gt;
-  &lt;li&gt;Parse the PBP data into &lt;em&gt;stints&lt;/em&gt;, or matchups between player lineups that may last 
-a number of possessions&lt;/li&gt;
+  &lt;li&gt;Parse the PBP data into &lt;em&gt;stints&lt;/em&gt;, or matchups between player lineups (that may last 
+a number of possessions)&lt;/li&gt;
   &lt;li&gt;Calculate the point differential resulting from each stint, and from that
-the &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt; array (which is actually plus-minus per 100 possessions)&lt;/li&gt;
+the &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt; array (which is actually the plus-minus per 100 possessions)&lt;/li&gt;
   &lt;li&gt;Create a matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; with &lt;script type=&quot;math/tex&quot;&gt;n&lt;/script&gt; stints (rows) and &lt;script type=&quot;math/tex&quot;&gt;m&lt;/script&gt; NBA players (columns)&lt;/li&gt;
 &lt;/ul&gt;
 
@@ -524,7 +519,7 @@ play. In addition, the starting lineup for each quarter was fetched separately, 
 for player rotations to be tracked throughout a game. This is crucial for monitoring which 
 lineups are out on the floor at any time.&lt;/p&gt;
 
-&lt;p&gt;Note that the full scraping and wrangling codes can be 
+&lt;p&gt;The full scraping and wrangling codes can be 
 &lt;a href=&quot;https://github.com/jecutter/nba-data-models&quot;&gt;found at my Github&lt;/a&gt;.&lt;/p&gt;
 
 &lt;figure&gt;
@@ -543,9 +538,11 @@ lineups are out on the floor at any time.&lt;/p&gt;
 &lt;p&gt;Once we’ve isolated each matchup, we can parse the lineups into individual players
 for the home and away teams. Since we are taking the results of a stint, rather than
 single possessions, each team has been on both offense and defense. Therefore, we
-give players a matrix entry of &lt;script type=&quot;math/tex&quot;&gt;1&lt;/script&gt; (home team lineup), &lt;script type=&quot;math/tex&quot;&gt;-1&lt;/script&gt; (away team lineup), 
-or &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt; (not on the floor). We then take &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt; to be the home team plus-minus per
-100 possessions. This can be done with a Python function as shown below:&lt;/p&gt;
+give home team players a matrix entry of &lt;script type=&quot;math/tex&quot;&gt;1&lt;/script&gt;, away team players an entry of &lt;script type=&quot;math/tex&quot;&gt;-1&lt;/script&gt;, 
+and players not on the floor an entry of &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt;. We then take &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt; to be the home team 
+plus-minus per 100 possessions.&lt;/p&gt;
+
+&lt;p&gt;This can be done with a Python function as shown below:&lt;/p&gt;
 
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;GenerateMatchupMatrix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;df&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;player_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
     &lt;span class=&quot;n&quot;&gt;matchup_plus_minus&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
@@ -683,38 +680,36 @@ us on what dependencies to examine further.&lt;/p&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;Shown in the matrix above are correlations between various player statistics averaged over
-the 2017-2019 seasons, including the previously discussed PER, BPM, RPM, and RAPM.
-The other abbreviated stats are: true shooting %, field goal attempts per 100 poss., 
-free throw rate, opponent field goal %, assist-to-turnover ratio, rebound rate, blocks
+the 2017-2019 seasons, including the previously discussed PER, BPM, RPM, and RAPM (within
+the green lines). The other abbreviated stats are: true shooting %, field goal attempts per 
+100 poss., free throw rate, opponent field goal %, assist-to-turnover ratio, rebound rate, blocks
 per 100 poss., and steals per 100 poss.&lt;/p&gt;
 
 &lt;p&gt;We can summarize some interesting points from this table:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;PER has a much higher correlation with player usage and shot attempts than the other 
-advanced stats (presumably, it rewards players who simply attempt to carry 
-the offensive load)&lt;/li&gt;
+  &lt;li&gt;PER has a much higher correlation with player usage than the other stats (it rewards 
+players who simply attempt more shots)&lt;/li&gt;
   &lt;li&gt;PER, BPM, and RPM all have a slight correlation with player height, while
 RAPM is completely uncorrelated with height&lt;/li&gt;
-  &lt;li&gt;Similarly, PER, BPM, and RPM give much more weight to rebounds and blocks
-than RAPM (interestingly, this is not as true for steals)&lt;/li&gt;
+  &lt;li&gt;PER, BPM, and RPM give much more weight to rebounds and blocks than RAPM 
+(interestingly, this is not as true for steals)&lt;/li&gt;
   &lt;li&gt;RAPM is the most correlated with opponent field goal %, which
 serves as a proxy for man-on-man defense that is hard to quantify&lt;/li&gt;
-  &lt;li&gt;True shooting % appears to be less correlated with RAPM than the other stats,
-however this is also true for the free throw rate (note that free
-throws factor in to true shooting)&lt;/li&gt;
-  &lt;li&gt;PER and RPM are much more correlated with BPM than RAPM.&lt;/li&gt;
+  &lt;li&gt;RAPM is less correlated with true shooting % than the other stats, though
+this is also true for the free throw rate (and free throws factor in to true shooting)&lt;/li&gt;
+  &lt;li&gt;PER and RPM are more correlated with BPM than RAPM.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Taking all these observations together, it is reasonable to hypothesize that
 1) other advanced stats appear to favor big men, including stats that are typical
 for big men (e.g. rebounds and blocks), and 2) ESPN’s RPM, one of the most popular and 
-quoted advanced stats, appears to be highly dependent on box score stats. Why is this?&lt;/p&gt;
+quoted advanced stats, appears to be highly dependent on box score stats.&lt;/p&gt;
 
 &lt;p&gt;The explanation for this is that the RPM methodology uses box-score priors 
 calculated from a historical RAPM dataset (which I have been unable to find).
-These &lt;strong&gt;Bayesian priors&lt;/strong&gt; are then used in the current ridge regression to 
-constrain the range of &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; for various players, whose value is essentially 
-pre-estimated using their box score stats. While these priors are proprietary and not 
+These &lt;strong&gt;Bayesian priors&lt;/strong&gt; are then used in the ridge regression to 
+constrain the range of &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; for various players, thus pre-estimating their 
+value using their box score stats. While these priors are proprietary and not 
 publicly available, it appears that the box-score component is significant.&lt;/p&gt;
 
 &lt;h2 id=&quot;conclusions&quot;&gt;Conclusions&lt;/h2&gt;
@@ -723,8 +718,7 @@ publicly available, it appears that the box-score component is significant.&lt;/
 to the publicly available advanced stats, because it shows just how subjective these 
 models are.&lt;/p&gt;
 
-&lt;p&gt;By subjective, I am &lt;em&gt;not&lt;/em&gt; saying that the box-score based models are never useful. 
-In Bayesian statistics, it is common to employ Bayesian priors to constrain results.
+&lt;p&gt;In Bayesian statistics, it is common to employ Bayesian priors to constrain results.
 However, the choice of these priors and the importance of each feature is inherently subjective,
 and somewhat defeats the original purpose of the RAPM method: to measure a player’s overall impact 
 and intangibles. If man-on-man defense is considered less valuable than a block, if a rebound 
@@ -741,4 +735,4 @@ inevitably leads to underestimating over-achievers and vice versa.&lt;/p&gt;
 &lt;p&gt;As a descriptive stat, pure RAPM models may still be the most objective.
 It may not accurately tell us what impact a player will have next season, but yet 
 again, can any stat do that reliably given unavoidable year-to-year variations? 
-No all-in-one stat gives a perfect player assessment, and every stat must be used in context.&lt;/p&gt;</content><author><name>Jacob Cutter</name></author><summary type="html"></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" /><media:content medium="image" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
+No all-in-one stat gives a perfect player assessment, and every stat must be used appropriately.&lt;/p&gt;</content><author><name>Jacob Cutter</name></author><summary type="html"></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" /><media:content medium="image" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
