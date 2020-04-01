@@ -6,4 +6,4 @@ User-agent: *
 Disallow:
 
 # The auto-generated sitemap
-Sitemap: https://jecutter.github.io//sitemap.xml
+Sitemap: https://jecutter.github.io/sitemap.xml
