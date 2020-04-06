@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-04-01T15:57:13-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-04-05T21:10:55-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
 &quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;With the expansion in popularity of NBA basketball over the years, an 
@@ -396,61 +396,74 @@ as definitive arguments for end-of-season awards, such as MVP.&lt;/p&gt;
 &lt;p&gt;You hear things like:
 “Player X is clearly superior to Player Y because he ranks higher in categories
 A, B, and C.” 
-Inevitably, you hear the response: “That may be true, but we all know stats A, B, and C
-don’t necessarily translate to winning basketball!”&lt;/p&gt;
+Inevitably, you hear the response: “We all know stats A, B, and C
+don’t necessarily translate to winning games!”&lt;/p&gt;
 
 &lt;p&gt;Even with such advanced stats, there is sometimes widespread disagreement 
-about a player’s impact or value. In my opinion, the crux of this problem is 
-that these stats are often taken out of the applicable context, perhaps due 
-to lack of transparency.&lt;/p&gt;
+about a player’s impact or value. There are multiple issues at play with these stats:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;They are heavily influenced by simple box score stats, some of which have
+arguable relevance to a player’s impact.&lt;/li&gt;
+  &lt;li&gt;Many of them are generated using historical data, biasing more recent evaluations.&lt;/li&gt;
+  &lt;li&gt;They are often taken out of applicable context (perhaps due to lack of transparency).&lt;/li&gt;
+&lt;/ol&gt;
 
 &lt;p&gt;Below, I will discuss my own attempt to “objectively” assess player impact by 
-creating a RAPM model. However, some words are in order about the existing
-landscape of advanced stats.&lt;/p&gt;
+creating a RAPM model and compare those results with existing stats. However, some words 
+are in order about the existing landscape of advanced stats.&lt;/p&gt;
 
 &lt;h2 id=&quot;player-impact-metrics&quot;&gt;Player Impact Metrics&lt;/h2&gt;
 
-&lt;p&gt;Here are just &lt;em&gt;some&lt;/em&gt; of the popular advanced player stats out there:&lt;/p&gt;
+&lt;p&gt;To get a broad survey of existing methodologies, let’s take a look at just
+some of the most popular advanced player stats that exist (follow the links
+to get a more detailed description):&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/per.html&quot;&gt;Hollinger’s Player Efficiency Rating (PER)&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/ws.html&quot;&gt;Justin Kubatko’s Win Shares (WS)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/per.html&quot;&gt;Hollinger’s Player Efficiency Rating (PER)&lt;/a&gt;
+&lt;!-- * [Justin Kubatko's Win Shares (WS)](https://www.basketball-reference.com/about/ws.html) --&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://squared2020.com/2017/09/18/deep-dive-on-regularized-adjusted-plus-minus-i-introductory-example/&quot;&gt;Plus-Minus/Adjusted Plus-Minus/RAPM&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/bpm2.html&quot;&gt;Daniel Myers’ Box Plus-Minus (BPM)&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://fansided.com/2016/09/08/player-tracking-plus-minus-2015-2016/&quot;&gt;Player Tracking Plus-Minus (PT-PM) by Andrew Johnson&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.basketball-reference.com/about/bpm2.html&quot;&gt;Box Plus-Minus (BPM), by Daniel Myers&lt;/a&gt;
+&lt;!-- * [Player Tracking Plus-Minus (PT-PM) by Andrew Johnson](https://fansided.com/2016/09/08/player-tracking-plus-minus-2015-2016/) --&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.espn.com/nba/story/_/id/10740818/introducing-real-plus-minus&quot;&gt;ESPN’s Real Plus-Minus (RPM), by Jeremias Engelmann&lt;/a&gt;&lt;/li&gt;
   &lt;li&gt;&lt;a href=&quot;https://www.bball-index.com/player-impact-plus-minus/&quot;&gt;Player Impact Plus-Minus (PIPM), by Jacob Goldstein of BBall Index&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;These were chosen to give a broad survey of existing methodologies. Follow the
-links to get a more detailed description of each.&lt;/p&gt;
-
 &lt;p&gt;Such player impact stats can be roughly categorized as follows:
-purely box-score based stats, Statistical Plus-Minus (SPM) models, and actual
+purely box score–based stats, Statistical Plus-Minus (SPM) models, and actual
 Plus-Minus models (usually based on RAPM).&lt;/p&gt;
 
-&lt;p&gt;PER and Win Shares belong to the first category. These all-in-one stats
-use fixed formulae to give a measure of player production from simple box score counting stats 
+&lt;p&gt;PER belongs to the first category. It is an all-in-one stat which
+uses a fixed formula to give a measure of player production from simple box score stats 
 (e.g. points, rebounds, assists, turnovers, steals, blocks, personal fouls).
-The validity of these models lie in the theoretical motivation behind the formulae, 
-which attempt to properly relate box score stats to points gained or lost.&lt;/p&gt;
+While PER succeeds in combining box score stats into a single number, there are
+&lt;a href=&quot;https://thezscore.com/2016/02/17/the-definitive-per-criticism/&quot;&gt;plenty of criticisms surrounding its methodology and biases&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;BPM and PT-PM are SPM models in the sense that they are also based on box score stats, 
-however they are regressed against existing RAPM datasets to determine the coefficients which 
+&lt;p&gt;BPM falls into the category of SPM models. While it is also based on box score stats, 
+it is a regression against historical RAPM datasets to determine the coefficients which 
 weight each feature (RAPM, a variant of plus-minus, will be discussed below). In other words, SPM
 models are linear estimators of RAPM.&lt;/p&gt;
 
-&lt;p&gt;It is easy to see why box-score based stats are limited; this can’t possibly 
-encompass the entirety of a player’s impact! Is grabbing a defensive rebound over your teammate 
+&lt;p&gt;It is easy to see why box score–based stats are limited; this can’t possibly 
+encompass the entirety of a player’s impact! Consider some of the things not taken
+into account by simple box score stats:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Man-on-man and help defense (more important than steals and blocks)&lt;/li&gt;
+  &lt;li&gt;Screen-setting to open up shooters&lt;/li&gt;
+  &lt;li&gt;Player gravity (drawing the defense with offensive threat)&lt;/li&gt;
+  &lt;li&gt;Floor spacing with 3-point shooting&lt;/li&gt;
+  &lt;li&gt;Quality of passing (&lt;em&gt;not&lt;/em&gt; the same as the rate of assists or turnovers)&lt;/li&gt;
+  &lt;li&gt;Intangibles (e.g. leadership, communication on defense, etc.)
+&lt;!--Is grabbing a defensive rebound over your teammate 
 more valuable than setting a screen that opens up a shot for Stephen Curry? If a blocked shot
 goes right back to the opposing team for a put-back, is that block more valuable than solid 
-man-on-man defense?&lt;/p&gt;
+man-on-man defense? --&gt;&lt;/li&gt;
+&lt;/ul&gt;
 
 &lt;p&gt;We would like to capture a player’s intangibles, or anything that is not shown
 by the box score. Plus-Minus based stats may be used for this purpose, since they 
-are based purely on overall team success when the player is on the floor. 
-RAPM, which is a successor of Plus-Minus, is the basis for the other advanced stats 
-above (RPM and PIPM). Let’s take a deeper look at what this means, and why this 
-technique is so prominent in basketball analytics.&lt;/p&gt;
+are based purely on overall team success when the player is on the floor.
+The advanced stats we have not yet discussed, RPM and PIPM, are both based on 
+RAPM, which is a successor of Plus-Minus. Let’s take a deeper look at what this 
+means, and why this technique is so prominent in basketball analytics.&lt;/p&gt;
 
 &lt;h2 id=&quot;what-is-regularized-adjusted-plus-minus&quot;&gt;What is Regularized Adjusted Plus-Minus?&lt;/h2&gt;
 
@@ -460,8 +473,8 @@ However, it is well-established that this metric is deceptive, since a player su
 by highly skilled teammates will have an inflated Plus-Minus.&lt;/p&gt;
 
 &lt;p&gt;To answer this, an &lt;strong&gt;Adjusted Plus-Minus (APM)&lt;/strong&gt; was created to account for these effects.
-This essentially means creating a &lt;script type=&quot;math/tex&quot;&gt;n \times m&lt;/script&gt; matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; of &lt;em&gt;n&lt;/em&gt; stints/possessions by &lt;em&gt;m&lt;/em&gt; 
-players involved in all those possessions. We can assign entries to &lt;script type=&quot;math/tex&quot;&gt;1&lt;/script&gt; if the player is on offense 
+This essentially means creating a &lt;script type=&quot;math/tex&quot;&gt;n \times m&lt;/script&gt; matrix &lt;script type=&quot;math/tex&quot;&gt;X&lt;/script&gt; of &lt;em&gt;n&lt;/em&gt; possessions by &lt;em&gt;m&lt;/em&gt; 
+players involved in all those possessions. We can set entries to &lt;script type=&quot;math/tex&quot;&gt;1&lt;/script&gt; if the player is on offense 
 in the possession, &lt;script type=&quot;math/tex&quot;&gt;-1&lt;/script&gt; if on defense, and &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt; if not on the floor. We can then formulate a matrix
 equation to solve for the coefficients &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; that give the resulting point differentials &lt;script type=&quot;math/tex&quot;&gt;Y&lt;/script&gt;:&lt;/p&gt;
 
@@ -471,15 +484,16 @@ X^T Y = X^T X \beta \\
 
 &lt;p&gt;We then approximate the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients by solving for the &lt;strong&gt;least-squares solution&lt;/strong&gt; to 
 the matrix equation. This yields &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; values which actually represent the player contribution, 
-&lt;em&gt;removing the effect of teammates and opposing players&lt;/em&gt;.&lt;/p&gt;
+removing the effect of teammates and opposing players.&lt;/p&gt;
 
 &lt;p&gt;These coefficients are the player APM values. However, because of multicollinearity
-between players, the results have enormous variance and essentially result in a meaningless 
-stat. Luckily, there is a Bayesian filtering technique for dealing with this very issue: 
-&lt;em&gt;ridge regression&lt;/em&gt;. This is a well-known method for penalizing outlier values back to the central value,
-to reduce variance at the expense of bias.&lt;/p&gt;
+between players and the large number of parameters, the results have enormous 
+variance. Luckily, there is a statistical technique for dealing with this very issue: 
+&lt;strong&gt;L2 regularization&lt;/strong&gt;, or &lt;strong&gt;ridge regression&lt;/strong&gt;. This is a well-known method for penalizing 
+outlier values back to the central value, to reduce variance at the expense of bias.&lt;/p&gt;
 
-&lt;p&gt;Ridge regression is performed by modifying the least squares formulation with a diagonal perturbation matrix &lt;script type=&quot;math/tex&quot;&gt;\lambda I&lt;/script&gt;:&lt;/p&gt;
+&lt;p&gt;Ridge regression is performed by modifying the least squares formulation with a 
+diagonal perturbation matrix &lt;script type=&quot;math/tex&quot;&gt;\lambda I&lt;/script&gt;:&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;\beta = (X^T Y + \lambda I)^{-1} X^T Y&lt;/script&gt;
 
@@ -488,14 +502,14 @@ coefficients, but without introducing an enormous bias. Note that in the limit t
 recover least squares; in the limit &lt;script type=&quot;math/tex&quot;&gt;\lambda \to \infty&lt;/script&gt;, &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; shrinks to &lt;script type=&quot;math/tex&quot;&gt;0&lt;/script&gt;.&lt;/p&gt;
 
 &lt;p&gt;In this case, the resulting &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients are the RAPM values, or the &lt;strong&gt;Regularized Adjusted Plus-Minus&lt;/strong&gt;
-for each player. To be clear, these values are no longer &lt;em&gt;absolute points added&lt;/em&gt;. This
+for each player. To be clear, these values are not absolute &lt;em&gt;points added&lt;/em&gt;. This
 regularization technique results in coefficients that are scaled by a factor dependent on &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt;.
 The RAPM values should therefore be taken as a relative stat, or a differential contribution.&lt;/p&gt;
 
 &lt;p&gt;Circling back, how do our advanced stats incorporate RAPM? SPM models like
 BPM use RAPM &lt;em&gt;strictly as an input&lt;/em&gt; to find the model coefficients. 
 RPM and PIPM, on the other hand, are essentially “enhanced” RAPM models which use
-&lt;strong&gt;Bayesian priors&lt;/strong&gt; to constrain the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients based on a fit to &lt;em&gt;previous&lt;/em&gt;
+&lt;strong&gt;Bayesian priors&lt;/strong&gt; to constrain the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; coefficients based on a fit to historical
 RAPM datasets. As we will discuss, this puts a potentially biased emphasis on box score stats.&lt;/p&gt;
 
 &lt;h2 id=&quot;harvesting-matchups-from-play-by-play-data&quot;&gt;Harvesting Matchups from Play-by-Play Data&lt;/h2&gt;
@@ -577,9 +591,9 @@ estimate the coefficients &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/scri
 &lt;em&gt;k&lt;/em&gt;-fold cross-validation to use the training data itself for validation.
 This is important, since we have only 3 seasons of NBA data (2017-2019).&lt;/p&gt;
 
-&lt;p&gt;In Python, we use the Ridge model from scikit-learn along with the GridSearchCV
+&lt;p&gt;In Python, we use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Ridge&lt;/code&gt; model from scikit-learn along with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GridSearchCV&lt;/code&gt;
 method to perform cross-validation on a comprehensive set of &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt; parameters
-(Note: &lt;script type=&quot;math/tex&quot;&gt;\lambda \equiv \alpha&lt;/script&gt; in the Ridge model).&lt;/p&gt;
+(Note: &lt;script type=&quot;math/tex&quot;&gt;\lambda \equiv \alpha&lt;/script&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Ridge&lt;/code&gt; model).&lt;/p&gt;
 
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;x_train&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rapm_matrix&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;y_train&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;matchup_plus_minus&lt;/span&gt;
@@ -602,7 +616,7 @@ function of &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt;.&lt;/
 
 &lt;p&gt;It is clear that the &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; values for small &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt; are highly unstable, as certain
 players experience a lot of variance. We can see that for our optimized &lt;script type=&quot;math/tex&quot;&gt;\lambda&lt;/script&gt; parameter, 
-the best- and worst-RAPM players are stable and begin to converge to the mean.&lt;/p&gt;
+the best– and worst–RAPM players are stable and begin to converge to the mean.&lt;/p&gt;
 
 &lt;figure&gt;
   
@@ -615,11 +629,11 @@ the best- and worst-RAPM players are stable and begin to converge to the mean.&l
   
 &lt;/figure&gt;
 
-&lt;p&gt;With these justifications in mind, we can select our hyperparameter with some
-degree of confidence. However, it is important to point out that our typical notion
-of unbiased, out-of-sample model testing is compromised here; player performance varies from 
-season to season, and this model is meant to produce a &lt;em&gt;descriptive&lt;/em&gt; stat over seasons rather
-than a &lt;em&gt;predictive&lt;/em&gt; one. But more on that later.&lt;/p&gt;
+&lt;p&gt;We therefore tune our hyperparameter with some degree of confidence. 
+It is important to point out that our typical notion of out-of-sample 
+model testing is compromised here; season-to-season variation in player performance
+is an unavoidable reality (for numerous reasons), and this model is meant to 
+produce a &lt;em&gt;descriptive&lt;/em&gt; stat rather than a &lt;em&gt;predictive&lt;/em&gt; one. But more on that later.&lt;/p&gt;
 
 &lt;h2 id=&quot;evaluating-player-rapm-ratings&quot;&gt;Evaluating Player RAPM Ratings&lt;/h2&gt;
 
@@ -628,8 +642,10 @@ than a &lt;em&gt;predictive&lt;/em&gt; one. But more on that later.&lt;/p&gt;
 &lt;p&gt;Along with play-by-play data, individual stats were scraped for NBA players, including
 net rating, BPM, and RPM (again, see my &lt;a href=&quot;https://github.com/jecutter/nba-data-models&quot;&gt;Github&lt;/a&gt;). 
 Note that &lt;em&gt;net rating&lt;/em&gt; is actually just the player’s raw plus-minus per 100 possessions, 
-which doesn’t take into account the caliber of a player’s supporting cast. 
-Below, we see the top 10 and bottom 10 players in RAPM, along with these other metrics.&lt;/p&gt;
+which doesn’t take into account the caliber of a player’s supporting cast.&lt;/p&gt;
+
+&lt;p&gt;Below, we see the top 10 and bottom 10 players in RAPM (of players averaging &lt;script type=&quot;math/tex&quot;&gt;&gt; 20&lt;/script&gt;
+minutes per game), along with these other metrics.&lt;/p&gt;
 
 &lt;figure&gt;
   
@@ -642,22 +658,40 @@ Below, we see the top 10 and bottom 10 players in RAPM, along with these other m
   
 &lt;/figure&gt;
 
-&lt;p&gt;Note: only players averaging &lt;script type=&quot;math/tex&quot;&gt;&gt; 20&lt;/script&gt; minutes per game are shown.&lt;/p&gt;
-
-&lt;p&gt;It is clear that some players with great RAPM also have a high net rating, but this
+&lt;!--
+It is clear that some players with great RAPM also have a high net rating, but this
 is not always the case. While there is overall correlation, we have to account for the
-fact that strengths/deficiencies are sometimes masked by context.&lt;/p&gt;
+fact that strengths/deficiencies are sometimes masked by context.
+--&gt;
 
-&lt;p&gt;Overall, the results are sensible. Stephen Curry has league-leading RAPM
-over the last 3 years, which is largely considered to be the era of “small ball” and 3-point
-shooting that he ushered in. It is interesting that the top 5 players are &lt;em&gt;all&lt;/em&gt; guards – 
-smaller players, 3 of whom are considered excellent 2-way players and all of whom can 
-shoot 3-pointers and make plays for others. Notice also that some players, especially Damian Lillard 
-and Jrue Holiday, are highly underrated by ESPN’s RPM.&lt;/p&gt;
+&lt;p&gt;Stephen Curry has league-leading RAPM over the last 3 years, which is not outlandish given
+that he is a transformative player of this era. It is more interesting that 
+the top 5 players are &lt;em&gt;all&lt;/em&gt; guards – smaller players, 3 of whom are considered excellent 2-way players 
+and all of whom can shoot 3-pointers and make plays for others. Notice also that some 
+players, especially Damian Lillard and Jrue Holiday, are highly underrated by ESPN’s RPM.&lt;/p&gt;
 
-&lt;p&gt;On the other hand, the players with the worst RAPM 
-tend to be either aging, inexperienced, or considered lazy on at least one end of the floor. 
-For instance, Trae Young is a rookie considered to be one of the worst defenders in the league.&lt;/p&gt;
+&lt;p&gt;If you are a basketball fan, I know you may scoff at the fact that Jrue Holiday is
+ranked “better” than LeBron James over a 3 year span. My response to this is: the 
+reasons you have for &lt;em&gt;assuming&lt;/em&gt; LeBron James is better may be very biased.
+If you take away LeBron James’s:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Usage rate (with the ball in his hands)&lt;/li&gt;
+  &lt;li&gt;Previous accomplishments (prior to 2017)&lt;/li&gt;
+  &lt;li&gt;Playoff performances (we are only looking at the &lt;em&gt;regular season&lt;/em&gt;)&lt;/li&gt;
+  &lt;li&gt;Media narratives&lt;/li&gt;
+  &lt;li&gt;“Flashiness”&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;it is not so far-fetched. Think about it: Jrue Holiday is young, plays 
+both ends of the floor, is an efficient scorer and play-maker,
+and has largely played a complementary role without an outstanding supporting cast.
+I’m not here to argue that Jrue Holiday is better than LeBron James in general, 
+however the purpose of this exercise is to remove biased assumptions.&lt;/p&gt;
+
+&lt;p&gt;On the other hand, the players with the worst RAPM tend to be either 
+aging, inexperienced, or considered lazy on at least one end of the floor. 
+For instance, Trae Young is a rookie considered to be one of the worst defenders 
+in the league.&lt;/p&gt;
 
 &lt;h2 id=&quot;comparing-with-other-advanced-stats&quot;&gt;Comparing with Other Advanced Stats&lt;/h2&gt;
 
@@ -697,28 +731,47 @@ RAPM is completely uncorrelated with height&lt;/li&gt;
 serves as a proxy for man-on-man defense that is hard to quantify&lt;/li&gt;
   &lt;li&gt;RAPM is less correlated with true shooting % than the other stats, though
 this is also true for the free throw rate (and free throws factor in to true shooting)&lt;/li&gt;
-  &lt;li&gt;PER and RPM are more correlated with BPM than RAPM.&lt;/li&gt;
+  &lt;li&gt;PER and RPM are more correlated with BPM than RAPM&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;Taking all these observations together, it is reasonable to hypothesize that
-1) other advanced stats appear to favor big men, including stats that are typical
-for big men (e.g. rebounds and blocks), and 2) ESPN’s RPM, one of the most popular and 
-quoted advanced stats, appears to be highly dependent on box score stats.&lt;/p&gt;
+&lt;p&gt;Taking all these observations together, it is reasonable to hypothesize that&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Other advanced stats appear to favor big men, including stats that are typical
+for big men (e.g. rebounds and blocks)&lt;/li&gt;
+  &lt;li&gt;ESPN’s RPM, one of the most popular and 
+quoted advanced stats, appears to be highly dependent on box score stats.&lt;/li&gt;
+&lt;/ol&gt;
 
-&lt;p&gt;The explanation for this is that the RPM methodology uses box-score priors 
-calculated from a historical RAPM dataset (which I have been unable to find).
-These &lt;strong&gt;Bayesian priors&lt;/strong&gt; are then used in the ridge regression to 
-constrain the range of &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; for various players, thus pre-estimating their 
-value using their box score stats. While these priors are proprietary and not 
-publicly available, it appears that the box-score component is significant.&lt;/p&gt;
+&lt;p&gt;The explanation for this is that the RPM methodology uses box score priors 
+calculated from a historical RAPM dataset (a cursory overview of such a technique is
+given in &lt;a href=&quot;https://fansided.com/2018/01/11/nylon-calculus-introducing-player-impact-plus-minus/&quot;&gt;this article about PIPM&lt;/a&gt;). 
+These &lt;strong&gt;Bayesian priors&lt;/strong&gt; are then used in the ridge regression to constrain the range of &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; for various players, 
+thus pre-estimating their value using their box score stats. While these priors are 
+proprietary and not publicly available, it appears that the box score component is significant
+(and even &lt;a href=&quot;https://cornerthreehoops.wordpress.com/tag/rapm/&quot;&gt;such factors as height and age are directly included&lt;/a&gt;).&lt;/p&gt;
 
 &lt;h2 id=&quot;conclusions&quot;&gt;Conclusions&lt;/h2&gt;
 
+&lt;p&gt;At the beginning of this article, I provided 3 criticisms of current player
+impact metrics. Let’s discuss how my RAPM ratings address each:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Box score dependence – there is none, not even assumed box score priors.&lt;/li&gt;
+  &lt;li&gt;Historical bias – RAPM in this context is calculated from only a 
+3-year dataset, providing sufficient statistics without biasing regression models
+to a completely different era of basketball.&lt;/li&gt;
+  &lt;li&gt;Context – as I will make clear, my RAPM model is &lt;em&gt;not&lt;/em&gt; intended to be predictive,
+but is a fair assessment of player impact over the games included.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;After comparing with these other metrics, let me define RAPM as follows:
+&lt;em&gt;the relative ability of a player to positively influence possessions, regardless
+of their box score numbers, usage, or position&lt;/em&gt;. This is meant to be a &lt;em&gt;descriptive&lt;/em&gt; stat 
+over selected seasons, and thus no attempt is made to develop box score priors to 
+improve the season-to-season accuracy.&lt;/p&gt;
+
 &lt;p&gt;This exercise to create a minimally-biased player ranking is informative when comparing
 to the publicly available advanced stats, because it shows just how subjective these 
-models are.&lt;/p&gt;
-
-&lt;p&gt;In Bayesian statistics, it is common to employ Bayesian priors to constrain results.
+models are. In Bayesian statistics, it is common to employ Bayesian priors to constrain results.
 However, the choice of these priors and the importance of each feature is inherently subjective,
 and somewhat defeats the original purpose of the RAPM method: to measure a player’s overall impact 
 and intangibles. If man-on-man defense is considered less valuable than a block, if a rebound 
@@ -728,11 +781,12 @@ shorter one, then our model loses its context-independence.&lt;/p&gt;
 &lt;p&gt;The true power of metrics like ESPN’s RPM is its &lt;em&gt;predictive&lt;/em&gt; power. By regressing
 against a very large RAPM dataset to calculate priors, it can then predict a player’s
 future RAPM with better accuracy. However, RPM is often used as a &lt;em&gt;descriptive&lt;/em&gt; stat
-to explain why a particular season’s box score stats, on which the model itself 
-is tuned, give a particular player an edge. This may be circular, flawed logic, as it
+to explain why a particular player has the edge in a given season, though RPM is tuned on 
+box score stats from other seasons which don’t necessarily reflect their current impact. This
 inevitably leads to underestimating over-achievers and vice versa.&lt;/p&gt;
 
 &lt;p&gt;As a descriptive stat, pure RAPM models may still be the most objective.
 It may not accurately tell us what impact a player will have next season, but yet 
 again, can any stat do that reliably given unavoidable year-to-year variations? 
-No all-in-one stat gives a perfect player assessment, and every stat must be used appropriately.&lt;/p&gt;</content><author><name>Jacob Cutter</name></author><summary type="html"></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" /><media:content medium="image" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
+No all-in-one stat gives a perfect player assessment, however we must make clear 
+how this zoo of stats is to be applied.&lt;/p&gt;</content><author><name>Jacob Cutter</name></author><summary type="html"></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" /><media:content medium="image" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
