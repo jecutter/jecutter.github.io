@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-04-06T08:52:00-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-04-06T09:20:58-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
 &quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;With the expansion in popularity of NBA basketball over the years, an 
@@ -734,7 +734,7 @@ this is also true for the free throw rate (and free throws factor in to true sho
   &lt;li&gt;PER and RPM are more correlated with BPM than RAPM&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;p&gt;Taking all these observations together, it is reasonable to hypothesize that&lt;/p&gt;
+&lt;p&gt;Taking all these observations together, it is reasonable to conclude that&lt;/p&gt;
 &lt;ol&gt;
   &lt;li&gt;Other advanced stats appear to favor big men, including stats that are typical
 for big men (e.g. rebounds and blocks)&lt;/li&gt;
@@ -743,7 +743,7 @@ quoted advanced stats, appears to be highly dependent on box score stats.&lt;/li
 &lt;/ol&gt;
 
 &lt;p&gt;The explanation for this is that the RPM methodology uses box score priors 
-calculated from a historical RAPM dataset (a cursory overview of such a technique is
+calculated from a historical 15-year RAPM dataset (a cursory overview of such a technique is
 given in &lt;a href=&quot;https://fansided.com/2018/01/11/nylon-calculus-introducing-player-impact-plus-minus/&quot;&gt;this article about PIPM&lt;/a&gt;). 
 These &lt;strong&gt;Bayesian priors&lt;/strong&gt; are then used in the ridge regression to constrain the range of &lt;script type=&quot;math/tex&quot;&gt;\beta&lt;/script&gt; for various players, 
 thus pre-estimating their value using their box score stats. While these priors are 
@@ -772,7 +772,7 @@ improve the season-to-season accuracy.&lt;/p&gt;
 &lt;p&gt;This exercise to create a minimally-biased player ranking is informative when comparing
 to the publicly available advanced stats, because it shows just how subjective these 
 models are. In Bayesian statistics, it is common to employ Bayesian priors to constrain results.
-However, the choice of these priors and the importance of each feature is inherently subjective,
+However, the choice of these priors and selection of features is inherently subjective,
 and somewhat defeats the original purpose of the RAPM method: to measure a player’s overall impact 
 and intangibles. If man-on-man defense is considered less valuable than a block, if a rebound 
 is given more weight than a well-executed pass, and a taller player is given the edge over a 
@@ -788,5 +788,5 @@ inevitably leads to underestimating over-achievers and vice versa.&lt;/p&gt;
 &lt;p&gt;As a descriptive stat, pure RAPM models may still be the most objective.
 It may not accurately tell us what impact a player will have next season, but yet 
 again, can any stat do that reliably given unavoidable year-to-year variations? 
-No all-in-one stat gives a perfect player assessment, however we must make clear 
-how this zoo of stats is to be applied.&lt;/p&gt;</content><author><name>Jacob Cutter</name></author><summary type="html"></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" /><media:content medium="image" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
+No all-in-one stat gives a perfect player assessment, however we must be clear 
+about how to apply this zoo of stats.&lt;/p&gt;</content><author><name>Jacob Cutter</name></author><summary type="html"></summary><media:thumbnail xmlns:media="http://search.yahoo.com/mrss/" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" /><media:content medium="image" url="https://jecutter.github.io/files/rapm_model/steph_mccaw.jpg" xmlns:media="http://search.yahoo.com/mrss/" /></entry></feed>
