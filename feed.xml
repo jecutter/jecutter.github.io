@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-06-21T11:45:57-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.8.5">Jekyll</generator><link href="https://jecutter.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://jecutter.github.io/" rel="alternate" type="text/html" /><updated>2020-06-21T12:04:36-07:00</updated><id>https://jecutter.github.io/feed.xml</id><title type="html">Jacob Cutter</title><subtitle></subtitle><author><name>Jacob Cutter</name></author><entry><title type="html">Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate" type="text/html" title="Comp The Player: Classifying NBA Players" /><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><id>https://jecutter.github.io/blog/player_comp</id><content type="html" xml:base="https://jecutter.github.io/blog/player-comp/">&lt;p&gt;&lt;img src=&quot;/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg&quot; alt=&quot;Default image for player comparison project.
 &quot; /&gt;
 &lt;!-- ![Welcome to Jacob Cutter's website!](/files/Cutter-6690_cropped.jpg) --&gt;&lt;/p&gt;
 
@@ -27,10 +27,10 @@ cheap talent. With this motivation in mind, let’s see how such a model can be 
 &lt;h2 id=&quot;a-word-about-random-forest-classification&quot;&gt;A Word About Random Forest Classification&lt;/h2&gt;
 
 &lt;p&gt;A common tool used for regression and classification is the &lt;strong&gt;decision tree&lt;/strong&gt;, 
-which essentially is an upside-down tree-like structure beginning with a &lt;em&gt;root&lt;/em&gt;. 
+which is a tree-like structure beginning with a &lt;em&gt;root&lt;/em&gt;. 
 From this starting node, which includes the entire sample, the algorithm decides 
 which of the input features provides the most information for differentiating 
-the sample data (i.e. players). The algorithm then splits the data on this feature.&lt;/p&gt;
+the sample data (i.e. player-seasons). The algorithm then splits the data on this feature.&lt;/p&gt;
 
 &lt;p&gt;The formula for &lt;em&gt;information gain&lt;/em&gt; provided by a new feature is given by 
 the difference between the entropy for the current node, &lt;script type=&quot;math/tex&quot;&gt;E(X)&lt;/script&gt;, and weighted
@@ -39,7 +39,8 @@ feature, &lt;script type=&quot;math/tex&quot;&gt;E(X | Y)&lt;/script&gt;:&lt;/p&
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;IG(X, Y) = E(X) - E(X | Y)&lt;/script&gt;
 
-&lt;p&gt;The entropy of &lt;script type=&quot;math/tex&quot;&gt;E(X)&lt;/script&gt; is simply:&lt;/p&gt;
+&lt;p&gt;The entropy of &lt;script type=&quot;math/tex&quot;&gt;E(X)&lt;/script&gt; is simply calculated from each &lt;script type=&quot;math/tex&quot;&gt;p_i&lt;/script&gt; (the probability/proportion
+of the &lt;script type=&quot;math/tex&quot;&gt;i&lt;/script&gt;th class):&lt;/p&gt;
 
 &lt;script type=&quot;math/tex; mode=display&quot;&gt;E(X) = - \sum_i p_i \log{p_i}&lt;/script&gt;
 
@@ -57,7 +58,8 @@ collection of many decision trees, which is highly advantageous for many problem
 Each tree is a random sub-sample of the input training data (a sampling technique 
 known as &lt;em&gt;bootstrapping&lt;/em&gt;), and each tree uses a subset of input features. 
 A vote is tallied from each tree’s prediction in order to determine the overall 
-prediction, essentially averaging over all estimators.&lt;/p&gt;
+prediction, essentially averaging over all estimators. This entire process is known
+as &lt;em&gt;bagging&lt;/em&gt;, short for &lt;em&gt;bootstrap aggregation&lt;/em&gt;.&lt;/p&gt;
 
 &lt;p&gt;Below is a cartoon from 
 &lt;a href=&quot;https://towardsdatascience.com/from-a-single-decision-tree-to-a-random-forest-b9523be65147&quot;&gt;this article&lt;/a&gt; 
@@ -76,7 +78,8 @@ by Rosaria Silipo and Kathrin Melcher.&lt;/p&gt;
 &lt;/figure&gt;
 
 &lt;p&gt;The strengths of this algorithm are that it can handle missing values, it automatically 
-accounts for relative feature importance, and it avoids overfitting by canceling out biases.&lt;/p&gt;
+accounts for relative feature importance, and it avoids overfitting by cancelling out
+the large variance associated with each tree.&lt;/p&gt;
 
 &lt;p&gt;As we will see, our model will consist of 181 output labels, which
 is the number of veteran players who played for the last 4 complete NBA seasons
@@ -137,7 +140,7 @@ dataframe, which was the result of data scraping from a variety of NBA data sour
 &lt;/ul&gt;
 
 &lt;p&gt;Note that &lt;em&gt;height&lt;/em&gt; and &lt;em&gt;weight&lt;/em&gt; are hardly “play-style” attributes, but rather
-physical attributes. This was deemed important since strict lines between player
+physical attributes. They are still important since strict lines between player
 positions, e.g. point guards, shooting guards, centers, etc., are becoming increasingly 
 blurred in the modern NBA, but a player’s size still determines how a player is utilized.&lt;/p&gt;
 
@@ -187,14 +190,14 @@ and testing datasets into input features and output labels (the player names).&l
 
 &lt;p&gt;In order to properly fit our input training data, it is also a good idea
 to scale the input features to unit variance and subtract their means.
-This is a good habit when training machine learning algorithms to avoid bias.&lt;/p&gt;
+This is a good habit when training machine learning algorithms to aid in
+model convergence and avoid feature biases.&lt;/p&gt;
 
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Scale features which will be used in model fitting
 # (for both training and testing datasets)
 &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;scale_train&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;StandardScaler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;train_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;train_features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scale_train&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;train_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;scale_test&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;StandardScaler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;test_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;test_features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scale_test&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;test_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;test_features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scale_train&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;test_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
 &lt;p&gt;A comprehensive grid search is performed on the various hyperparameters
@@ -229,7 +232,7 @@ to create our RFC model.&lt;/p&gt;
 
 &lt;p&gt;The model is then run on our test dataset (the 2019 dataset for each
 veteran player). The accuracy here is then simply the fraction of 
-veterans that were properly identified with themselves.&lt;/p&gt;
+veterans that were properly identified with themselves (from previous seasons).&lt;/p&gt;
 
 &lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Run the classifier model on the test data
 &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y_pred&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rfc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;predict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;test_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
@@ -259,8 +262,7 @@ stats meant to characterize play style rather than performance.&lt;/p&gt;
 &lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pred_labels&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;df_rooks&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;name&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]]&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;pred_features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;df_rooks&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;feature_list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
 
-&lt;span class=&quot;n&quot;&gt;scale_pred&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;StandardScaler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pred_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;pred_features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scale_pred&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pred_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;pred_features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;scale_train&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pred_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;rook_pred&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rfc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;predict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pred_features&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 
 &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pred&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;enumerate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rook_pred&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
