@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>Emotify: Filtering Spotify Playlists by Emotion | Jacob Cutter</title>
+  <meta name="description" content="Building emotion classifiers from Last.fm, Spotify, and Genius data and deploying a Streamlit app on AWS EC2 that filters any public Spotify playlist by emotional content.">
+  <meta name="author" content="Jacob Cutter">  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://jecutter.github.io/blog/emotify/">
+  <link rel="stylesheet" href="https://jecutter.github.io/static/css/style.css">
+  <link rel="shortcut icon" href="https://jecutter.github.io/favicon.ico">
+  <link type="application/atom+xml" rel="alternate" href="https://jecutter.github.io/feed.xml" title="Jacob Cutter">
+  <link rel="me" href="https://linkedin.com/in/jacob-cutter">
+  <link rel="me" href="https://github.com/jecutter">
+  <link rel="me" href="https://medium.com/@jecutter">
+
+  <!-- Open Graph (LinkedIn, Facebook, Slack, Discord link previews) -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Jacob Cutter">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://jecutter.github.io/blog/emotify/">
+  <meta property="og:title" content="Emotify: Filtering Spotify Playlists by Emotion">
+  <meta property="og:description" content="Building emotion classifiers from Last.fm, Spotify, and Genius data and deploying a Streamlit app on AWS EC2 that filters any public Spotify playlist by emotional content.">
+  <meta property="og:image" content="https://jecutter.github.io/files/emotify/emotify_app_example.png">
+  <meta property="og:image:alt" content="Emotify: Filtering Spotify Playlists by Emotion">
+  <meta property="article:published_time" content="2020-06-21T00:00:00-07:00">
+  <meta property="article:author" content="Jacob Cutter">
+  <meta property="article:section" content="Insight Data Science">
+
+  <!-- Twitter/X card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Emotify: Filtering Spotify Playlists by Emotion">
+  <meta name="twitter:description" content="Building emotion classifiers from Last.fm, Spotify, and Genius data and deploying a Streamlit app on AWS EC2 that filters any public Spotify playlist by emotional content.">
+  <meta name="twitter:image" content="https://jecutter.github.io/files/emotify/emotify_app_example.png">
+
+  <meta name="google-site-verification" content="0ieniI60ODidmNwvRGEmwT3CpSKPVc5EeTy5mEPzIIs">
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://jecutter.github.io/#person",
+        "name": "Jacob Cutter",
+        "url": "https://jecutter.github.io/",
+        "image": "https://jecutter.github.io/files/Cutter-6690_cropped.jpg",
+        "jobTitle": "AI Engineer",
+        "description": "Jacob Cutter is an AI engineer and former particle physicist building real-time LLM reasoning systems. Projects, writing, patents, and papers on AI, speech, and dark matter detection.",
+        "knowsAbout": ["Artificial Intelligence", "Large Language Models", "Conversational AI", "Automatic Speech Recognition", "Machine Learning", "Data Science", "Particle Physics", "Dark Matter Detection"],
+        "worksFor": {"@type": "Organization", "name": "GrowthX", "url": "https://growthx.ai"},
+        "alumniOf": {"@type": "CollegeOrUniversity", "name": "University of California, Davis", "url": "https://www.ucdavis.edu"},
+        "sameAs": ["https://linkedin.com/in/jacob-cutter", "https://github.com/jecutter", "https://medium.com/@jecutter"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://jecutter.github.io/#website",
+        "url": "https://jecutter.github.io/",
+        "name": "Jacob Cutter",
+        "description": "Jacob Cutter is an AI engineer and former particle physicist building real-time LLM reasoning systems. Projects, writing, patents, and papers on AI, speech, and dark matter detection.",
+        "inLanguage": "en",
+        "publisher": {"@id": "https://jecutter.github.io/#person"}
+      }
+,
+      {
+        "@type": "BlogPosting",
+        "@id": "https://jecutter.github.io/blog/emotify/#article",
+        "mainEntityOfPage": {"@type": "WebPage", "@id": "https://jecutter.github.io/blog/emotify/"},
+        "headline": "Emotify: Filtering Spotify Playlists by Emotion",
+        "description": "Building emotion classifiers from Last.fm, Spotify, and Genius data and deploying a Streamlit app on AWS EC2 that filters any public Spotify playlist by emotional content.",
+        "image": "https://jecutter.github.io/files/emotify/emotify_app_example.png",
+        "datePublished": "2020-06-21T00:00:00-07:00",
+        "dateModified": "2020-06-21T00:00:00-07:00",
+        "author": {"@id": "https://jecutter.github.io/#person"},
+        "publisher": {"@id": "https://jecutter.github.io/#person"},
+        "isPartOf": {"@id": "https://jecutter.github.io/#website"},
+        "inLanguage": "en",
+        "articleSection": "Insight Data Science"      }    ]
+  }
+  </script>
+<script>
+MathJax = {
+  tex: {
+    inlineMath: [['$', '$'], ['\\(', '\\)']],
+    displayMath: [['$$', '$$'], ['\\[', '\\]']],
+    processEscapes: true
+  }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" async></script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GE5SMBVF5H"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-GE5SMBVF5H');
+  </script>
+</head>
+<body class="themed">
+  <aside role="complementary" class="sidebar">
+    <div class="sidebar-portrait">
+      <img src="/files/Cutter-6690_cropped.jpg" alt="Portrait of Jacob Cutter" />
+    </div>
+    <div class="container sidebar-sticky">
+      <div class="sidebar-about">
+        <div class="site-title">
+          <a href="https://jecutter.github.io/" title="Home">Jacob Cutter</a>
+        </div>
+        <p class="lead">AI Engineer, Researcher, Physicist</p>
+      </div>
+      <nav role="navigation" class="sidebar-nav">
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/">Home</a>
+        <a class="sidebar-nav-item active" href="https://jecutter.github.io/articles-and-projects/">Articles and Projects</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/papers/">Patents and Publications</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/files/jacob_cutter_resume_3_7_2026.pdf" target="_blank" rel="noopener noreferrer">Resume</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/files/jacob_cutter_phd_thesis_2020.pdf" target="_blank" rel="noopener noreferrer">PhD Thesis</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/privacy-policy/">Privacy Policy</a>
+      </nav>
+      <small>
+        &copy; 2024. All rights reserved.
+      </small>
+    </div>
+  </aside>
+  <main role="main" class="content container">
+<article role="article" class="post">
+  <h1 class="post-title">Emotify: Filtering Spotify Playlists by Emotion</h1>
+  <time datetime="2020-06-21T00:00:00-07:00" class="post-date">June 21, 2020</time>
+  <p>Music streaming services bring in an enormous amount of revenue, and mood-based playlists are among the most popular offerings. Those playlists, however, are typically curated by humans.</p>
+<p>For my Insight Data Science project, I built <strong>Emotify</strong>: a proof-of-concept tool that lets users filter any public Spotify playlist by emotional content — happy, sad, or angry — and deployed it as a web app on an AWS EC2 instance.</p>
+<p>This post walks through the full pipeline: from disparate data sources and APIs used to build the training set, through the emotion classification models, to the Streamlit application that serves filtered results.</p>
+<figure>
+<a href="/files/emotify/emotify_dataflow_diagram.png">
+<img src="/files/emotify/emotify_dataflow_diagram.png" alt="Emotify data flow: Last.fm labels → Spotify audio features; vocal subset also gets Genius lyrics and sentiment, then both branches feed into emotion classifiers." />
+</a>
+<figcaption>Data flow: emotional labels from Last.fm, audio features from Spotify for all tracks; vocal tracks also get lyrics from Genius and a sentiment score. Instrumental and lyrical branches feed separate classifiers.</figcaption>
+</figure>
+
+<h2 id="data-sources-and-the-training-pipeline">Data Sources and the Training Pipeline</h2>
+<p>Building a labeled dataset for <em>emotion</em> was the main challenge. I needed a large set of tracks with emotional labels, then rich features (audio and, for vocal music, lyrics) to train classifiers. No single API provided all of this, so I combined three sources.</p>
+<h3 id="lastfm-million-songs-dataset-emotional-labels">Last.fm (Million Songs Dataset): Emotional Labels</h3>
+<p>The <a href="http://millionsongdataset.com/">Million Song Dataset</a> Last.fm subset provides user-generated tags for a huge number of tracks. I used two SQLite databases:</p>
+<ul>
+<li><strong>track_metadata.db</strong> (artist, title, track IDs) and</li>
+<li><strong>lastfm_tags.db</strong> (tags per track)</li>
+</ul>
+<p>The notebooks define keyword lists for four emotions — <strong>happy, calm, sad, angry</strong> — and scan each track’s tags for matches. To avoid ambiguous tracks, a track is assigned to an emotion only if it has tags for that emotion and no tags from the other emotion lists.</p>
+<p>This yields a labeled set of tracks that reflect <em>user perception</em> of emotion, which is exactly what we want for a mood-filtering product.</p>
+<h3 id="spotify-api-audio-features">Spotify API: Audio Features</h3>
+<p>Once I had emotionally labeled tracks, I used the <a href="https://developer.spotify.com/documentation/web-api/">Spotify Web API</a> (via the <a href="https://spotipy.readthedocs.io/">Spotipy</a> Python library) to fetch <a href="https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/">audio features</a> for each track:</p>
+<ul>
+<li><strong>Valence</strong>: positivity of sound (cheerful vs. sad), similar to sentiment</li>
+<li><strong>Energy</strong>: how fast, loud, and noisy</li>
+<li><strong>Danceability</strong>: how regular and strong is the tempo, rhythm</li>
+<li><strong>Speechiness</strong>: &lt; 0.33 “non-speech-like” tracks</li>
+<li><strong>Acousticness</strong>: confidence that the track is acoustic</li>
+<li><strong>Liveness</strong>: &gt; 0.8 gives strong likelihood a crowd is present</li>
+<li><strong>Instrumentalness</strong>: &gt; 0.5 is typically instrumental</li>
+<li><strong>Loudness</strong>: audio level dB (logarithmic)</li>
+<li><strong>Tempo</strong>: speed/pace (i.e. beats per minute, BPM)</li>
+<li><strong>Duration</strong>: length of the song (seconds)</li>
+<li><strong>Key</strong>: musical key, the estimated foundational note or tonic</li>
+<li><strong>Mode</strong>: modality, either Major (represented by 1) or Minor (represented by 0)</li>
+<li><strong>Time Signature</strong>: defines the beats per measure and rhythmic feel</li>
+</ul>
+<p>Search was done by track name and artist; the first match was taken. Because of rate limits and the size of the set, the Final notebook processes tracks in batches with sleep intervals.</p>
+<p>Note that the different audio features separate the classes in complementary ways, which we can see by looking at the distributions by label.</p>
+<figure>
+<div style="display: flex; gap: 1em; flex-wrap: wrap;">
+<img src="/files/emotify/energy_label.png" alt="Energy by emotion label" style="max-width: 48%;" />
+<img src="/files/emotify/valence_label.png" alt="Valence by emotion label" style="max-width: 48%;" />
+</div>
+<figcaption>Energy and valence by emotion label. These Spotify features help separate happy, sad, and angry in the training set.</figcaption>
+</figure>
+
+<p>Spotify’s <strong>instrumentalness</strong> and <strong>speechiness</strong> scores may also be leveraged to split the pipeline into two paths: one for <strong>instrumental</strong> tracks (instrumentalness &gt; 0.45 and speechiness &lt; 0.33) and one for <strong>vocal/lyrical</strong> tracks. The former are classified using audio features only; the latter additionally use lyrics-based sentiment.</p>
+<figure>
+<a href="/files/emotify/instrumentalness.png">
+<img src="/files/emotify/instrumentalness.png" alt="Instrumentalness by emotion and track type." />
+</a>
+<figcaption>Instrumentalness and speechiness define the split between instrumental and vocal training sets.</figcaption>
+</figure>
+
+<p>There is an additional feature transformation I performed as well. Loudness is given in dB, which is logarithmic, so to provide better signal to the models I converted it to a linear scale: $10^{\text{loudness}/20}$.</p>
+<figure>
+<a href="/files/emotify/loudness_linear.png">
+<img src="/files/emotify/loudness_linear.png" alt="Loudness (linear) by emotion for instrumental tracks." />
+</a>
+<figcaption>Loudness before and after transformation in the training set.</figcaption>
+</figure>
+
+<h3 id="genius-api-lyrics-and-sentiment-for-vocal-tracks">Genius API: Lyrics and Sentiment for Vocal Tracks</h3>
+<p>For vocal/lyrical tracks, lyrics add important signal. I used the <a href="https://docs.genius.com/">Genius API</a> via <a href="https://github.com/johnwmillr/LyricsGenius">LyricsGenius</a> to fetch lyrics for each track in the labeled set. The notebooks enforce English-only lyrics (using <code>langdetect</code>) and use <a href="https://github.com/seatgeek/thefuzz">fuzzywuzzy</a> to confirm that the Genius result matches the intended track title, reducing mislabeled training data.</p>
+<p>For sentiment, I compared NLTK’s <strong>VADER</strong> (Valence Aware Dictionary and sEntiment Reasoner) with TextBlob; VADER gave better separation across the emotional classes.</p>
+<figure>
+<a href="/files/emotify/sentiment_skew.png">
+<img src="/files/emotify/sentiment_skew.png" alt="Sentiment score distribution by emotion for vocal tracks." />
+</a>
+<figcaption>Lyrical sentiment scores by emotion label; VADER's compound score helps separate the classes.</figcaption>
+</figure>
+
+<p>For each vocal track with lyrics, I computed a single compound sentiment score and used it alongside the Spotify audio features in the lyrical classifier.</p>
+<h2 id="model-development-two-classifiers">Model Development: Two Classifiers</h2>
+<p>The goal was two separate classifiers: one for <strong>instrumental</strong> music (Spotify features only) and one for <strong>vocal/lyrical</strong> music (Spotify features plus lyrical sentiment).</p>
+<p>The development notebook (<em>Emotify_Project_Dev.ipynb</em>) explores 4-label (happy, calm, sad, angry) and 3-label setups, plus logistic regression, SVM (SGD), and random forest. The final setup drops <strong>calm</strong> and uses <strong>happy</strong>, <strong>sad</strong>, and <strong>angry</strong> for both branches to improve class balance and focus; emotional ambiguit/overlap complicates matters here and so I kept things simple.</p>
+<p>There was an iterative process here to prune features and understand their relative importance; this involved training the models and assessing the impurity decrease in the RFC models.</p>
+<figure>
+<a href="/files/emotify/feature_importance.png">
+<img src="/files/emotify/feature_importance.png" alt="Feature importance from the emotion classifiers." />
+</a>
+<figcaption>Feature importance (i.e. from the Random Forest) for the emotion models.</figcaption>
+</figure>
+
+<h4 id="instrumental-model">Instrumental Model</h4>
+<p>Training data is built from <code>Total_Spotify_4Emotion_AllParts.csv</code> by filtering to instrumental tracks (instrumentalness &gt; 0.45, speechiness &lt; 0.33) and removing the calm class. The features used are:</p>
+<ul>
+<li>Valence</li>
+<li>Energy</li>
+<li>Danceability</li>
+<li>Speechiness</li>
+<li>Acousticness</li>
+<li>Loudness (linear converted)</li>
+<li>Duration</li>
+</ul>
+<p>The pipeline uses an 80/20 train-test split, <code>StandardScaler</code> fit on the training set, and a <strong>Random Forest</strong> classifier (with downsampling of majority classes as needed). Hyperparameters were tuned in the dev notebook; the final model is produced by <strong>build_final_model.py</strong>, which writes <code>best_inst_scale.pkl</code> and <code>best_inst_rfc.pkl</code>.</p>
+<h4 id="lyrical-model">Lyrical Model</h4>
+<p>Training data comes from <strong>GeniusLyrics_VocalsOnlySet_FullFinal_withSentScores.csv</strong>, which holds vocal tracks with lyrics and precomputed sentiment scores. Again, the <strong>calm</strong> class is dropped. Features include the sentiment score plus the same Spotify-derived features used in the dev notebook:</p>
+<ul>
+<li>Key</li>
+<li>Mode</li>
+<li>Time Signature</li>
+<li>Tempo</li>
+<li>Instrumentalness</li>
+<li>Liveness</li>
+</ul>
+<p>The same scaling and Random Forest workflow is used for the final model; <strong>build_final_model.py</strong> outputs <code>best_lyrical_scale.pkl</code> and <code>best_lyrical_rfc.pkl</code>.</p>
+<h4 id="results">Results</h4>
+<p>We can see from the confusion matrices for both "final" models that there a similar (but inverse) overlap between "happy" and "angry" music for instrumental vs. lyrical music. Some additional analysis of the data could be done here to dig deeper on the nuances of the crowd-sourced labels, but the accuracy is still decent for such a murky problem.</p>
+<figure>
+<div style="display: flex; gap: 1em; flex-wrap: wrap;">
+<img src="/files/emotify/instrumental_confusion.png" alt="Instrumental classifier confusion matrix" style="max-width: 48%;" />
+<img src="/files/emotify/vocal_confusion.png" alt="Vocal/lyrical classifier confusion matrix" style="max-width: 48%;" />
+</div>
+<figcaption>Confusion matrices for the instrumental (left) and vocal/lyrical (right) emotion classifiers.</figcaption>
+</figure>
+
+<p>All model-building code — data loading, splitting, scaling, fitting, and saving — lives in the <a href="https://github.com/jecutter/Emotify_Insight_Project">Emotify_Insight_Project</a> repo (notebooks and <code>build_final_model.py</code>). The serialized scalers and classifiers are then used by the deployed app.</p>
+<h2 id="the-streamlit-app-and-deployment">The Streamlit App and Deployment</h2>
+<p>The user-facing product is a <a href="https://www.streamlit.io/">Streamlit</a> app in the <a href="https://github.com/jecutter/Emotify_App">Emotify_App</a> repo. <strong>Emotify_App.py</strong> does the following:</p>
+<ol>
+<li><strong>Loads the four artifacts</strong> (instrumental scaler + RFC, lyrical scaler + RFC) from a <code>models_v2/</code> directory via <code>load_models()</code>, cached with <code>@st.cache(allow_output_mutation=True)</code>.</li>
+<li><strong>Authenticates</strong> with Spotify (client credentials) and Genius (API key) using environment variables: <code>SPOTIPY_CLIENT_ID</code>, <code>SPOTIPY_CLIENT_SECRET</code>, <code>GENIUS_API_KEY</code>.</li>
+<li><strong>Accepts user input:</strong> a Spotify playlist ID or URI, a choice of “Instrumental” or “Lyrical/Vocal,” and an emotion (Happy, Sad, Angry).</li>
+<li><strong>Fetches playlist tracks</strong> with <code>sp.user_playlist_tracks()</code> and iterates over each track. For each track it retrieves Spotify audio features and decides whether the track is “lyrical” (instrumentalness &lt; 0.45 or speechiness &gt; 0.33) or instrumental, matching the training pipeline.</li>
+<li><strong>For lyrical tracks:</strong> fetches lyrics via Genius, checks title match (fuzzy) and English language, computes a VADER compound sentiment score, and runs the lyrical scaler + RFC. If the predicted emotion matches the user’s choice, the track is added to the result list.</li>
+<li><strong>For instrumental tracks:</strong> applies the instrumental scaler + RFC; if the prediction matches the selected emotion, the track is added.</li>
+<li><strong>Stops after 5 matching songs</strong> or after a 60-second timeout to keep the app responsive, then displays the matches with embedded Spotify players via <code>embed_spotify_track()</code>.</li>
+</ol>
+<figure>
+<a href="/files/emotify/emotify_app_example.png">
+<img src="/files/emotify/emotify_app_example.png" alt="Emotify Streamlit app: playlist input, instrumental/lyrical choice, emotion selector, and embedded Spotify players for matching tracks." />
+</a>
+<figcaption>The Streamlit interface: user enters a playlist ID, chooses instrumental or lyrical music and an emotion, and receives up to five matching tracks with embedded players.</figcaption>
+</figure>
+
+<p>The app was deployed on an <strong>AWS EC2</strong> instance. The server runs Python 3.7 with Streamlit and required packages.</p>
+<p>The EC2 environment is configured with the same three environment variables so the app can call Spotify and Genius. The serialized models (<code>models_v2/*.pkl</code>) are placed on the instance so the app can load them at startup.</p>
+<p>Once running, Streamlit is served (e.g. with a reverse proxy or by binding to the instance’s public address) so users can open the app in a browser and filter any public playlist by emotion.</p>
+<h2 id="summary">Summary</h2>
+<p>Emotify ties together multiple data sources and a clear train/deploy split: <strong>Last.fm</strong> for emotional labels, <strong>Spotify</strong> for audio features and playlist content, and <strong>Genius</strong> for lyrics and sentiment on vocal tracks. Two Random Forest classifiers — one for instrumental and one for lyrical music — are trained in the <a href="https://github.com/jecutter/Emotify_Insight_Project">Emotify_Insight_Project</a> repo and serialized with their scalers.</p>
+<p>The <a href="https://github.com/jecutter/Emotify_App">Emotify_App</a> Streamlit app loads these models, authenticates with the APIs, and filters a user-supplied Spotify playlist by chosen emotion, with the app hosted on AWS EC2.</p>
+<p>The live app was previously available at <a href="http://dataproject.xyz/">dataproject.xyz</a>, but now must be run locally.</p>
+</article>
+  </main>
+  <script>
+  (function() {
+    var main = document.querySelector('main');
+    if (!main) return;
+    main.querySelectorAll('a[href]').forEach(function(a) {
+      var href = a.getAttribute('href');
+      if (!href) return;
+      var openNew = false;
+      if (href.indexOf('http') === 0) {
+        try {
+          openNew = (new URL(a.href).origin !== location.origin);
+        } catch (e) {
+          openNew = true;
+        }
+      } else if (href.toLowerCase().indexOf('.pdf') !== -1) {
+        openNew = true;
+      }
+      if (openNew) {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

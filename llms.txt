@@ -1,0 +1,30 @@
+# Jacob Cutter
+
+> Jacob Cutter is an AI engineer and former particle physicist building real-time LLM reasoning systems. Projects, writing, patents, and papers on AI, speech, and dark matter detection.
+
+AI Engineer, Researcher, Physicist. Personal site and portfolio at https://jecutter.github.io.
+
+## Pages
+
+- [Articles and Projects](https://jecutter.github.io/articles-and-projects/): Machine learning and data science projects by Jacob Cutter, with write-ups on emotion classification for music, NBA player impact modeling, and interactive data exploration tools.
+- [Patents and Publications](https://jecutter.github.io/papers/): Patents and peer-reviewed publications by Jacob Cutter, spanning end-to-end speech recognition and transformer architectures through dark matter detection and noble element physics.
+- [Privacy Policy](https://jecutter.github.io/privacy-policy/): How this site uses Google Analytics.
+
+## Articles and projects
+
+- [Emotify: Filtering Spotify Playlists by Emotion](https://jecutter.github.io/blog/emotify/) (2020-06-21): Building emotion classifiers from Last.fm, Spotify, and Genius data and deploying a Streamlit app on AWS EC2 that filters any public Spotify playlist by emotional content.
+- [Comp The Player: Classifying NBA Players](https://jecutter.github.io/blog/player-comp/) (2020-03-30): Performing informative NBA player comparisons to assess style of play using Random Forest classification.
+- [An RAPM Model to Assess NBA Players](https://jecutter.github.io/blog/rapm-model/) (2020-03-28): Developing a lineup-independent NBA player impact model using ridge regression techniques on play-by-play data.
+- [An Interactive Bokeh App for NBA Stats Exploration](https://jecutter.github.io/blog/nba-stats-explorer/) (2020-01-20): Building an interactive Bokeh dashboard to explore player, lineup, and play-by-play NBA data from scraped datasets.
+
+## Elsewhere
+
+- LinkedIn: https://linkedin.com/in/jacob-cutter
+- GitHub: https://github.com/jecutter
+- Medium: https://medium.com/@jecutter
+- Resume: https://jecutter.github.io/files/jacob_cutter_resume_3_7_2026.pdf
+
+## Optional
+
+- [Full article feed](https://jecutter.github.io/feed.xml)
+- [Sitemap](https://jecutter.github.io/sitemap.xml)

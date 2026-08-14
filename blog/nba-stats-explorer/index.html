@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <title>An Interactive Bokeh App for NBA Stats Exploration | Jacob Cutter</title>
+  <meta name="description" content="Building an interactive Bokeh dashboard to explore player, lineup, and play-by-play NBA data from scraped datasets.">
+  <meta name="author" content="Jacob Cutter">  <meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+  <link rel="canonical" href="https://jecutter.github.io/blog/nba-stats-explorer/">
+  <link rel="stylesheet" href="https://jecutter.github.io/static/css/style.css">
+  <link rel="shortcut icon" href="https://jecutter.github.io/favicon.ico">
+  <link type="application/atom+xml" rel="alternate" href="https://jecutter.github.io/feed.xml" title="Jacob Cutter">
+  <link rel="me" href="https://linkedin.com/in/jacob-cutter">
+  <link rel="me" href="https://github.com/jecutter">
+  <link rel="me" href="https://medium.com/@jecutter">
+
+  <!-- Open Graph (LinkedIn, Facebook, Slack, Discord link previews) -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Jacob Cutter">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:url" content="https://jecutter.github.io/blog/nba-stats-explorer/">
+  <meta property="og:title" content="An Interactive Bokeh App for NBA Stats Exploration">
+  <meta property="og:description" content="Building an interactive Bokeh dashboard to explore player, lineup, and play-by-play NBA data from scraped datasets.">
+  <meta property="og:image" content="https://jecutter.github.io/files/nba_stats_explorer/nba_stats_explorer_curry_player_ex.png">
+  <meta property="og:image:alt" content="An Interactive Bokeh App for NBA Stats Exploration">
+  <meta property="article:published_time" content="2020-01-20T00:00:00-08:00">
+  <meta property="article:author" content="Jacob Cutter">
+  <meta property="article:section" content="Sports Data Science">
+
+  <!-- Twitter/X card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="An Interactive Bokeh App for NBA Stats Exploration">
+  <meta name="twitter:description" content="Building an interactive Bokeh dashboard to explore player, lineup, and play-by-play NBA data from scraped datasets.">
+  <meta name="twitter:image" content="https://jecutter.github.io/files/nba_stats_explorer/nba_stats_explorer_curry_player_ex.png">
+
+  <meta name="google-site-verification" content="0ieniI60ODidmNwvRGEmwT3CpSKPVc5EeTy5mEPzIIs">
+<script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://jecutter.github.io/#person",
+        "name": "Jacob Cutter",
+        "url": "https://jecutter.github.io/",
+        "image": "https://jecutter.github.io/files/Cutter-6690_cropped.jpg",
+        "jobTitle": "AI Engineer",
+        "description": "Jacob Cutter is an AI engineer and former particle physicist building real-time LLM reasoning systems. Projects, writing, patents, and papers on AI, speech, and dark matter detection.",
+        "knowsAbout": ["Artificial Intelligence", "Large Language Models", "Conversational AI", "Automatic Speech Recognition", "Machine Learning", "Data Science", "Particle Physics", "Dark Matter Detection"],
+        "worksFor": {"@type": "Organization", "name": "GrowthX", "url": "https://growthx.ai"},
+        "alumniOf": {"@type": "CollegeOrUniversity", "name": "University of California, Davis", "url": "https://www.ucdavis.edu"},
+        "sameAs": ["https://linkedin.com/in/jacob-cutter", "https://github.com/jecutter", "https://medium.com/@jecutter"]
+      },
+      {
+        "@type": "WebSite",
+        "@id": "https://jecutter.github.io/#website",
+        "url": "https://jecutter.github.io/",
+        "name": "Jacob Cutter",
+        "description": "Jacob Cutter is an AI engineer and former particle physicist building real-time LLM reasoning systems. Projects, writing, patents, and papers on AI, speech, and dark matter detection.",
+        "inLanguage": "en",
+        "publisher": {"@id": "https://jecutter.github.io/#person"}
+      }
+,
+      {
+        "@type": "BlogPosting",
+        "@id": "https://jecutter.github.io/blog/nba-stats-explorer/#article",
+        "mainEntityOfPage": {"@type": "WebPage", "@id": "https://jecutter.github.io/blog/nba-stats-explorer/"},
+        "headline": "An Interactive Bokeh App for NBA Stats Exploration",
+        "description": "Building an interactive Bokeh dashboard to explore player, lineup, and play-by-play NBA data from scraped datasets.",
+        "image": "https://jecutter.github.io/files/nba_stats_explorer/nba_stats_explorer_curry_player_ex.png",
+        "datePublished": "2020-01-20T00:00:00-08:00",
+        "dateModified": "2020-01-20T00:00:00-08:00",
+        "author": {"@id": "https://jecutter.github.io/#person"},
+        "publisher": {"@id": "https://jecutter.github.io/#person"},
+        "isPartOf": {"@id": "https://jecutter.github.io/#website"},
+        "inLanguage": "en",
+        "articleSection": "Sports Data Science"      }    ]
+  }
+  </script>
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-GE5SMBVF5H"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-GE5SMBVF5H');
+  </script>
+</head>
+<body class="themed">
+  <aside role="complementary" class="sidebar">
+    <div class="sidebar-portrait">
+      <img src="/files/Cutter-6690_cropped.jpg" alt="Portrait of Jacob Cutter" />
+    </div>
+    <div class="container sidebar-sticky">
+      <div class="sidebar-about">
+        <div class="site-title">
+          <a href="https://jecutter.github.io/" title="Home">Jacob Cutter</a>
+        </div>
+        <p class="lead">AI Engineer, Researcher, Physicist</p>
+      </div>
+      <nav role="navigation" class="sidebar-nav">
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/">Home</a>
+        <a class="sidebar-nav-item active" href="https://jecutter.github.io/articles-and-projects/">Articles and Projects</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/papers/">Patents and Publications</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/files/jacob_cutter_resume_3_7_2026.pdf" target="_blank" rel="noopener noreferrer">Resume</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/files/jacob_cutter_phd_thesis_2020.pdf" target="_blank" rel="noopener noreferrer">PhD Thesis</a>
+        <a class="sidebar-nav-item" href="https://jecutter.github.io/privacy-policy/">Privacy Policy</a>
+      </nav>
+      <small>
+        &copy; 2024. All rights reserved.
+      </small>
+    </div>
+  </aside>
+  <main role="main" class="content container">
+<article role="article" class="post">
+  <h1 class="post-title">An Interactive Bokeh App for NBA Stats Exploration</h1>
+  <time datetime="2020-01-20T00:00:00-08:00" class="post-date">January 20, 2020</time>
+  <p>After scraping and cleaning NBA data from multiple sources — player bios and advanced stats, lineup aggregates, and full play-by-play logs — the next step was to explore it. Static Jupyter notebooks are fine for one-off analysis, but comparing players across dozens of stats, or checking how a specific lineup or game unfolded, quickly becomes tedious when you have to re-run cells and tweak filters by hand.</p>
+<p>I built a small <a href="https://bokeh.org/">Bokeh</a> application that loads the same CSVs used in the <a href="https://github.com/jecutter/nba-data-models/tree/master/Data_Exploration">Data_Exploration</a> notebooks and exposes them through three interactive tabs: <strong>Player Stats</strong>, <strong>Lineup Stats</strong>, and <strong>Game Play-By-Play</strong>. The app runs locally (<code>bokeh serve --show bokeh_app/</code>) and lets you filter and plot without touching code.</p>
+<h2 id="how-the-app-is-structured">How the App Is Structured</h2>
+<p>The app lives under <code>bokeh_app/</code> in the <a href="https://github.com/jecutter/nba-data-models">nba-data-models</a> repo. <code>main.py</code> reads three datasets: a merged player-season CSV (combining draft combine, bios, and advanced stats), a lineup-stats CSV, and a play-by-play CSV that includes per-stint plus-minus and possession counts. Each tab is implemented in its own module under <code>tabs/</code> and returns a Bokeh <code>Panel</code>; the main script assembles them into a single <code>Tabs</code> widget.</p>
+<h2 id="player-stats-tab">Player Stats Tab</h2>
+<p>The player tab uses the same kind of data explored in <code>Player_Data_Exploration.ipynb</code>: hundreds of columns per player-season (shot location frequencies, rates, play-type usage, defensive metrics, etc.). The UI provides:</p>
+<ul>
+<li><strong>Filters:</strong> player name (substring), team, season range, and age range.</li>
+<li><strong>Axis dropdowns:</strong> any two columns can be chosen as x and y for a scatter plot.</li>
+</ul>
+<p>Points matching the current filters are highlighted in red and listed in a data table; the rest stay in the background in grey. That makes it easy to compare a single player across seasons or to see how they sit relative to the league in any two stats (e.g. frequency of shots at the rim vs. from beyond 24 feet).</p>
+<figure>
+<a href="/files/nba_stats_explorer/nba_stats_explorer_curry_player_ex.png">
+<img src="/files/nba_stats_explorer/nba_stats_explorer_curry_player_ex.png" alt="Player Stats tab example with Stephen Curry selected." />
+</a>
+<figcaption>Player Stats tab: filtering by "curry" and plotting shot frequency at the rim (x) vs. beyond 24 ft (y). Selected player-seasons appear in red and in the table.</figcaption>
+</figure>
+
+<h2 id="lineup-stats-tab">Lineup Stats Tab</h2>
+<p>The lineup tab is driven by the same aggregated lineup data used in <code>Lineup_Data_Exploration.ipynb</code>. You can restrict by team, season range, and “lineup contains player” (substring on the lineup name). Again, x and y are any two columns — e.g. points per 100 (GPT) vs. net rating (NETRTGT). The scatter plot and table show only lineups that pass the filters, so you can quickly see how lineups that include a given player perform in different metric spaces.</p>
+<figure>
+<a href="/files/nba_stats_explorer/nba_stats_explorer_curry_lineup_ex.png">
+<img src="/files/nba_stats_explorer/nba_stats_explorer_curry_lineup_ex.png" alt="Lineup Stats tab example with Curry lineups." />
+</a>
+<figcaption>Lineup Stats tab: lineups containing "curry", with GPT vs. NETRTGT. Useful for checking which Curry lineups are most effective.</figcaption>
+</figure>
+
+<h2 id="game-play-by-play-tab">Game Play-By-Play Tab</h2>
+<p>The play-by-play tab is tied to the stint-level data and logic in <code>PlayByPlay_Data_Exploration.ipynb</code>. You pick a team, season, and game number (1–82). The plot shows one chosen series (e.g. home-team margin) on the y-axis vs. time in seconds on the x-axis. An optional “stints containing player” field highlights stretches when that player is on the floor (box annotations), so you can visually tie runs or slumps to specific rotations.</p>
+<figure>
+<a href="/files/nba_stats_explorer/nba_stats_explorer_curry_pbp_ex.png">
+<img src="/files/nba_stats_explorer/nba_stats_explorer_curry_pbp_ex.png" alt="Play-by-play tab example for a Warriors game with Curry stints highlighted." />
+</a>
+<figcaption>Game Play-By-Play tab: score margin over time for a selected game, with Curry’s stints highlighted. Helps see how the game flowed when a given player was on the court.</figcaption>
+</figure>
+
+<h2 id="why-this-is-useful">Why This Is Useful</h2>
+<p>The Python notebooks do the heavy lifting for data scraping and aggregation: defining data cuts, computing correlations, and performing clustering (e.g. by position). The Bokeh app doesn’t replace that; it turns the same CSVs into a quick exploration front end.</p>
+<p>You can try many axis pairs and filters without re-running code, compare a player’s lineups or their presence in a specific game, and sanity-check patterns before digging into analytics or modeling (e.g. the <a href="/blog/rapm-model/">RAPM</a> or <a href="/blog/player-comp/">player comp</a> work).</p>
+<p>All of the code — scraping, exploration notebooks, and the Bokeh app — is in the <a href="https://github.com/jecutter/nba-data-models">nba-data-models</a> repository.</p>
+</article>
+  </main>
+  <script>
+  (function() {
+    var main = document.querySelector('main');
+    if (!main) return;
+    main.querySelectorAll('a[href]').forEach(function(a) {
+      var href = a.getAttribute('href');
+      if (!href) return;
+      var openNew = false;
+      if (href.indexOf('http') === 0) {
+        try {
+          openNew = (new URL(a.href).origin !== location.origin);
+        } catch (e) {
+          openNew = true;
+        }
+      } else if (href.toLowerCase().indexOf('.pdf') !== -1) {
+        openNew = true;
+      }
+      if (openNew) {
+        a.setAttribute('target', '_blank');
+        a.setAttribute('rel', 'noopener noreferrer');
+      }
+    });
+  })();
+  </script>
+</body>
+</html>

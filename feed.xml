@@ -1,0 +1,767 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Jacob Cutter</title><link href="https://jecutter.github.io/" rel="alternate"/><link href="https://jecutter.github.io/feed.xml" rel="self"/><id>https://jecutter.github.io/</id><updated>2020-06-21T00:00:00-07:00</updated><subtitle>AI Engineer, Researcher, Physicist</subtitle><entry><title>Emotify: Filtering Spotify Playlists by Emotion</title><link href="https://jecutter.github.io/blog/emotify/" rel="alternate"/><published>2020-06-21T00:00:00-07:00</published><updated>2020-06-21T00:00:00-07:00</updated><author><name>Jacob Cutter</name></author><id>tag:jecutter.github.io,2020-06-21:/blog/emotify/</id><summary type="html">&lt;p&gt;Building emotion classifiers from Last.fm, Spotify, and Genius data and deploying a Streamlit app on AWS EC2 that filters any public Spotify playlist by emotional content.&lt;/p&gt;</summary><content type="html">&lt;p&gt;Music streaming services bring in an enormous amount of revenue, and mood-based playlists are among the most popular offerings. Those playlists, however, are typically curated by humans.&lt;/p&gt;
+&lt;p&gt;For my Insight Data Science project, I built &lt;strong&gt;Emotify&lt;/strong&gt;: a proof-of-concept tool that lets users filter any public Spotify playlist by emotional content — happy, sad, or angry — and deployed it as a web app on an AWS EC2 instance.&lt;/p&gt;
+&lt;p&gt;This post walks through the full pipeline: from disparate data sources and APIs used to build the training set, through the emotion classification models, to the Streamlit application that serves filtered results.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/emotify/emotify_dataflow_diagram.png"&gt;
+&lt;img src="/files/emotify/emotify_dataflow_diagram.png" alt="Emotify data flow: Last.fm labels → Spotify audio features; vocal subset also gets Genius lyrics and sentiment, then both branches feed into emotion classifiers." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Data flow: emotional labels from Last.fm, audio features from Spotify for all tracks; vocal tracks also get lyrics from Genius and a sentiment score. Instrumental and lyrical branches feed separate classifiers.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h2 id="data-sources-and-the-training-pipeline"&gt;Data Sources and the Training Pipeline&lt;/h2&gt;
+&lt;p&gt;Building a labeled dataset for &lt;em&gt;emotion&lt;/em&gt; was the main challenge. I needed a large set of tracks with emotional labels, then rich features (audio and, for vocal music, lyrics) to train classifiers. No single API provided all of this, so I combined three sources.&lt;/p&gt;
+&lt;h3 id="lastfm-million-songs-dataset-emotional-labels"&gt;Last.fm (Million Songs Dataset): Emotional Labels&lt;/h3&gt;
+&lt;p&gt;The &lt;a href="http://millionsongdataset.com/"&gt;Million Song Dataset&lt;/a&gt; Last.fm subset provides user-generated tags for a huge number of tracks. I used two SQLite databases:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;track_metadata.db&lt;/strong&gt; (artist, title, track IDs) and&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;lastfm_tags.db&lt;/strong&gt; (tags per track)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The notebooks define keyword lists for four emotions — &lt;strong&gt;happy, calm, sad, angry&lt;/strong&gt; — and scan each track’s tags for matches. To avoid ambiguous tracks, a track is assigned to an emotion only if it has tags for that emotion and no tags from the other emotion lists.&lt;/p&gt;
+&lt;p&gt;This yields a labeled set of tracks that reflect &lt;em&gt;user perception&lt;/em&gt; of emotion, which is exactly what we want for a mood-filtering product.&lt;/p&gt;
+&lt;h3 id="spotify-api-audio-features"&gt;Spotify API: Audio Features&lt;/h3&gt;
+&lt;p&gt;Once I had emotionally labeled tracks, I used the &lt;a href="https://developer.spotify.com/documentation/web-api/"&gt;Spotify Web API&lt;/a&gt; (via the &lt;a href="https://spotipy.readthedocs.io/"&gt;Spotipy&lt;/a&gt; Python library) to fetch &lt;a href="https://developer.spotify.com/documentation/web-api/reference/tracks/get-audio-features/"&gt;audio features&lt;/a&gt; for each track:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Valence&lt;/strong&gt;: positivity of sound (cheerful vs. sad), similar to sentiment&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Energy&lt;/strong&gt;: how fast, loud, and noisy&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Danceability&lt;/strong&gt;: how regular and strong is the tempo, rhythm&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Speechiness&lt;/strong&gt;: &amp;lt; 0.33 “non-speech-like” tracks&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Acousticness&lt;/strong&gt;: confidence that the track is acoustic&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Liveness&lt;/strong&gt;: &amp;gt; 0.8 gives strong likelihood a crowd is present&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Instrumentalness&lt;/strong&gt;: &amp;gt; 0.5 is typically instrumental&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Loudness&lt;/strong&gt;: audio level dB (logarithmic)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Tempo&lt;/strong&gt;: speed/pace (i.e. beats per minute, BPM)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Duration&lt;/strong&gt;: length of the song (seconds)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Key&lt;/strong&gt;: musical key, the estimated foundational note or tonic&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Mode&lt;/strong&gt;: modality, either Major (represented by 1) or Minor (represented by 0)&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Time Signature&lt;/strong&gt;: defines the beats per measure and rhythmic feel&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Search was done by track name and artist; the first match was taken. Because of rate limits and the size of the set, the Final notebook processes tracks in batches with sleep intervals.&lt;/p&gt;
+&lt;p&gt;Note that the different audio features separate the classes in complementary ways, which we can see by looking at the distributions by label.&lt;/p&gt;
+&lt;figure&gt;
+&lt;div style="display: flex; gap: 1em; flex-wrap: wrap;"&gt;
+&lt;img src="/files/emotify/energy_label.png" alt="Energy by emotion label" style="max-width: 48%;" /&gt;
+&lt;img src="/files/emotify/valence_label.png" alt="Valence by emotion label" style="max-width: 48%;" /&gt;
+&lt;/div&gt;
+&lt;figcaption&gt;Energy and valence by emotion label. These Spotify features help separate happy, sad, and angry in the training set.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Spotify’s &lt;strong&gt;instrumentalness&lt;/strong&gt; and &lt;strong&gt;speechiness&lt;/strong&gt; scores may also be leveraged to split the pipeline into two paths: one for &lt;strong&gt;instrumental&lt;/strong&gt; tracks (instrumentalness &amp;gt; 0.45 and speechiness &amp;lt; 0.33) and one for &lt;strong&gt;vocal/lyrical&lt;/strong&gt; tracks. The former are classified using audio features only; the latter additionally use lyrics-based sentiment.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/emotify/instrumentalness.png"&gt;
+&lt;img src="/files/emotify/instrumentalness.png" alt="Instrumentalness by emotion and track type." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Instrumentalness and speechiness define the split between instrumental and vocal training sets.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;There is an additional feature transformation I performed as well. Loudness is given in dB, which is logarithmic, so to provide better signal to the models I converted it to a linear scale: $10^{\text{loudness}/20}$.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/emotify/loudness_linear.png"&gt;
+&lt;img src="/files/emotify/loudness_linear.png" alt="Loudness (linear) by emotion for instrumental tracks." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Loudness before and after transformation in the training set.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h3 id="genius-api-lyrics-and-sentiment-for-vocal-tracks"&gt;Genius API: Lyrics and Sentiment for Vocal Tracks&lt;/h3&gt;
+&lt;p&gt;For vocal/lyrical tracks, lyrics add important signal. I used the &lt;a href="https://docs.genius.com/"&gt;Genius API&lt;/a&gt; via &lt;a href="https://github.com/johnwmillr/LyricsGenius"&gt;LyricsGenius&lt;/a&gt; to fetch lyrics for each track in the labeled set. The notebooks enforce English-only lyrics (using &lt;code&gt;langdetect&lt;/code&gt;) and use &lt;a href="https://github.com/seatgeek/thefuzz"&gt;fuzzywuzzy&lt;/a&gt; to confirm that the Genius result matches the intended track title, reducing mislabeled training data.&lt;/p&gt;
+&lt;p&gt;For sentiment, I compared NLTK’s &lt;strong&gt;VADER&lt;/strong&gt; (Valence Aware Dictionary and sEntiment Reasoner) with TextBlob; VADER gave better separation across the emotional classes.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/emotify/sentiment_skew.png"&gt;
+&lt;img src="/files/emotify/sentiment_skew.png" alt="Sentiment score distribution by emotion for vocal tracks." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Lyrical sentiment scores by emotion label; VADER's compound score helps separate the classes.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;For each vocal track with lyrics, I computed a single compound sentiment score and used it alongside the Spotify audio features in the lyrical classifier.&lt;/p&gt;
+&lt;h2 id="model-development-two-classifiers"&gt;Model Development: Two Classifiers&lt;/h2&gt;
+&lt;p&gt;The goal was two separate classifiers: one for &lt;strong&gt;instrumental&lt;/strong&gt; music (Spotify features only) and one for &lt;strong&gt;vocal/lyrical&lt;/strong&gt; music (Spotify features plus lyrical sentiment).&lt;/p&gt;
+&lt;p&gt;The development notebook (&lt;em&gt;Emotify_Project_Dev.ipynb&lt;/em&gt;) explores 4-label (happy, calm, sad, angry) and 3-label setups, plus logistic regression, SVM (SGD), and random forest. The final setup drops &lt;strong&gt;calm&lt;/strong&gt; and uses &lt;strong&gt;happy&lt;/strong&gt;, &lt;strong&gt;sad&lt;/strong&gt;, and &lt;strong&gt;angry&lt;/strong&gt; for both branches to improve class balance and focus; emotional ambiguit/overlap complicates matters here and so I kept things simple.&lt;/p&gt;
+&lt;p&gt;There was an iterative process here to prune features and understand their relative importance; this involved training the models and assessing the impurity decrease in the RFC models.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/emotify/feature_importance.png"&gt;
+&lt;img src="/files/emotify/feature_importance.png" alt="Feature importance from the emotion classifiers." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Feature importance (i.e. from the Random Forest) for the emotion models.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h4 id="instrumental-model"&gt;Instrumental Model&lt;/h4&gt;
+&lt;p&gt;Training data is built from &lt;code&gt;Total_Spotify_4Emotion_AllParts.csv&lt;/code&gt; by filtering to instrumental tracks (instrumentalness &amp;gt; 0.45, speechiness &amp;lt; 0.33) and removing the calm class. The features used are:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Valence&lt;/li&gt;
+&lt;li&gt;Energy&lt;/li&gt;
+&lt;li&gt;Danceability&lt;/li&gt;
+&lt;li&gt;Speechiness&lt;/li&gt;
+&lt;li&gt;Acousticness&lt;/li&gt;
+&lt;li&gt;Loudness (linear converted)&lt;/li&gt;
+&lt;li&gt;Duration&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The pipeline uses an 80/20 train-test split, &lt;code&gt;StandardScaler&lt;/code&gt; fit on the training set, and a &lt;strong&gt;Random Forest&lt;/strong&gt; classifier (with downsampling of majority classes as needed). Hyperparameters were tuned in the dev notebook; the final model is produced by &lt;strong&gt;build_final_model.py&lt;/strong&gt;, which writes &lt;code&gt;best_inst_scale.pkl&lt;/code&gt; and &lt;code&gt;best_inst_rfc.pkl&lt;/code&gt;.&lt;/p&gt;
+&lt;h4 id="lyrical-model"&gt;Lyrical Model&lt;/h4&gt;
+&lt;p&gt;Training data comes from &lt;strong&gt;GeniusLyrics_VocalsOnlySet_FullFinal_withSentScores.csv&lt;/strong&gt;, which holds vocal tracks with lyrics and precomputed sentiment scores. Again, the &lt;strong&gt;calm&lt;/strong&gt; class is dropped. Features include the sentiment score plus the same Spotify-derived features used in the dev notebook:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Key&lt;/li&gt;
+&lt;li&gt;Mode&lt;/li&gt;
+&lt;li&gt;Time Signature&lt;/li&gt;
+&lt;li&gt;Tempo&lt;/li&gt;
+&lt;li&gt;Instrumentalness&lt;/li&gt;
+&lt;li&gt;Liveness&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;The same scaling and Random Forest workflow is used for the final model; &lt;strong&gt;build_final_model.py&lt;/strong&gt; outputs &lt;code&gt;best_lyrical_scale.pkl&lt;/code&gt; and &lt;code&gt;best_lyrical_rfc.pkl&lt;/code&gt;.&lt;/p&gt;
+&lt;h4 id="results"&gt;Results&lt;/h4&gt;
+&lt;p&gt;We can see from the confusion matrices for both "final" models that there a similar (but inverse) overlap between "happy" and "angry" music for instrumental vs. lyrical music. Some additional analysis of the data could be done here to dig deeper on the nuances of the crowd-sourced labels, but the accuracy is still decent for such a murky problem.&lt;/p&gt;
+&lt;figure&gt;
+&lt;div style="display: flex; gap: 1em; flex-wrap: wrap;"&gt;
+&lt;img src="/files/emotify/instrumental_confusion.png" alt="Instrumental classifier confusion matrix" style="max-width: 48%;" /&gt;
+&lt;img src="/files/emotify/vocal_confusion.png" alt="Vocal/lyrical classifier confusion matrix" style="max-width: 48%;" /&gt;
+&lt;/div&gt;
+&lt;figcaption&gt;Confusion matrices for the instrumental (left) and vocal/lyrical (right) emotion classifiers.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;All model-building code — data loading, splitting, scaling, fitting, and saving — lives in the &lt;a href="https://github.com/jecutter/Emotify_Insight_Project"&gt;Emotify_Insight_Project&lt;/a&gt; repo (notebooks and &lt;code&gt;build_final_model.py&lt;/code&gt;). The serialized scalers and classifiers are then used by the deployed app.&lt;/p&gt;
+&lt;h2 id="the-streamlit-app-and-deployment"&gt;The Streamlit App and Deployment&lt;/h2&gt;
+&lt;p&gt;The user-facing product is a &lt;a href="https://www.streamlit.io/"&gt;Streamlit&lt;/a&gt; app in the &lt;a href="https://github.com/jecutter/Emotify_App"&gt;Emotify_App&lt;/a&gt; repo. &lt;strong&gt;Emotify_App.py&lt;/strong&gt; does the following:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;&lt;strong&gt;Loads the four artifacts&lt;/strong&gt; (instrumental scaler + RFC, lyrical scaler + RFC) from a &lt;code&gt;models_v2/&lt;/code&gt; directory via &lt;code&gt;load_models()&lt;/code&gt;, cached with &lt;code&gt;@st.cache(allow_output_mutation=True)&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Authenticates&lt;/strong&gt; with Spotify (client credentials) and Genius (API key) using environment variables: &lt;code&gt;SPOTIPY_CLIENT_ID&lt;/code&gt;, &lt;code&gt;SPOTIPY_CLIENT_SECRET&lt;/code&gt;, &lt;code&gt;GENIUS_API_KEY&lt;/code&gt;.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Accepts user input:&lt;/strong&gt; a Spotify playlist ID or URI, a choice of “Instrumental” or “Lyrical/Vocal,” and an emotion (Happy, Sad, Angry).&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Fetches playlist tracks&lt;/strong&gt; with &lt;code&gt;sp.user_playlist_tracks()&lt;/code&gt; and iterates over each track. For each track it retrieves Spotify audio features and decides whether the track is “lyrical” (instrumentalness &amp;lt; 0.45 or speechiness &amp;gt; 0.33) or instrumental, matching the training pipeline.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;For lyrical tracks:&lt;/strong&gt; fetches lyrics via Genius, checks title match (fuzzy) and English language, computes a VADER compound sentiment score, and runs the lyrical scaler + RFC. If the predicted emotion matches the user’s choice, the track is added to the result list.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;For instrumental tracks:&lt;/strong&gt; applies the instrumental scaler + RFC; if the prediction matches the selected emotion, the track is added.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Stops after 5 matching songs&lt;/strong&gt; or after a 60-second timeout to keep the app responsive, then displays the matches with embedded Spotify players via &lt;code&gt;embed_spotify_track()&lt;/code&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;figure&gt;
+&lt;a href="/files/emotify/emotify_app_example.png"&gt;
+&lt;img src="/files/emotify/emotify_app_example.png" alt="Emotify Streamlit app: playlist input, instrumental/lyrical choice, emotion selector, and embedded Spotify players for matching tracks." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;The Streamlit interface: user enters a playlist ID, chooses instrumental or lyrical music and an emotion, and receives up to five matching tracks with embedded players.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;The app was deployed on an &lt;strong&gt;AWS EC2&lt;/strong&gt; instance. The server runs Python 3.7 with Streamlit and required packages.&lt;/p&gt;
+&lt;p&gt;The EC2 environment is configured with the same three environment variables so the app can call Spotify and Genius. The serialized models (&lt;code&gt;models_v2/*.pkl&lt;/code&gt;) are placed on the instance so the app can load them at startup.&lt;/p&gt;
+&lt;p&gt;Once running, Streamlit is served (e.g. with a reverse proxy or by binding to the instance’s public address) so users can open the app in a browser and filter any public playlist by emotion.&lt;/p&gt;
+&lt;h2 id="summary"&gt;Summary&lt;/h2&gt;
+&lt;p&gt;Emotify ties together multiple data sources and a clear train/deploy split: &lt;strong&gt;Last.fm&lt;/strong&gt; for emotional labels, &lt;strong&gt;Spotify&lt;/strong&gt; for audio features and playlist content, and &lt;strong&gt;Genius&lt;/strong&gt; for lyrics and sentiment on vocal tracks. Two Random Forest classifiers — one for instrumental and one for lyrical music — are trained in the &lt;a href="https://github.com/jecutter/Emotify_Insight_Project"&gt;Emotify_Insight_Project&lt;/a&gt; repo and serialized with their scalers.&lt;/p&gt;
+&lt;p&gt;The &lt;a href="https://github.com/jecutter/Emotify_App"&gt;Emotify_App&lt;/a&gt; Streamlit app loads these models, authenticates with the APIs, and filters a user-supplied Spotify playlist by chosen emotion, with the app hosted on AWS EC2.&lt;/p&gt;
+&lt;p&gt;The live app was previously available at &lt;a href="http://dataproject.xyz/"&gt;dataproject.xyz&lt;/a&gt;, but now must be run locally.&lt;/p&gt;</content><category term="Insight Data Science"/></entry><entry><title>Comp The Player: Classifying NBA Players</title><link href="https://jecutter.github.io/blog/player-comp/" rel="alternate"/><published>2020-03-30T00:00:00-07:00</published><updated>2020-03-30T00:00:00-07:00</updated><author><name>Jacob Cutter</name></author><id>tag:jecutter.github.io,2020-03-30:/blog/player-comp/</id><summary type="html">&lt;p&gt;Performing informative NBA player comparisons to assess style of play using Random Forest classification.&lt;/p&gt;</summary><content type="html">&lt;p&gt;&lt;img alt="Article header for player comparison project." src="/files/player_comp/imgonline-com-ua-twotoone-Xzq8ZtqJyh.jpg"&gt;&lt;/p&gt;
+&lt;p&gt;With the expansion in popularity of NBA basketball over the years, an
+enormous amount of data is now being produced from game to game. This no longer
+is limited to simple counting stats like points, rebounds, and assists --
+we can now ask questions like: "How many times did Klay Thompson dribble the ball
+before shooting in the 3rd quarter? How many miles did he run on defense?
+How many times did he shoot from beyond 24 feet?"&lt;/p&gt;
+&lt;p&gt;I recently spent some time scraping such data from
+the web in order to do some exploratory analysis on NBA basketball players
+&lt;a href="https://github.com/jecutter/nba-data-models"&gt;(see my Github for code)&lt;/a&gt;.
+One of the simplest questions we can ask is: what defines a player? Not in terms of
+production or value, but &lt;em&gt;stylistically&lt;/em&gt;, how does a player play?&lt;/p&gt;
+&lt;p&gt;In my explorations, I have found that it is difficult to use unsupervised methods
+such as &lt;em&gt;k&lt;/em&gt;-means clustering to define style of play, because the number of features
+and groups to use becomes highly arbitrary with &lt;em&gt;so many different ways to play&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Therefore, I constructed a player classification model, with the target
+labels being the veteran players themselves. Such a model allows us to find the best "comp"
+for, say, rookie players who are frequently scouted by NBA front offices searching for
+cheap talent. With this motivation in mind, let's see how such a model can be built.&lt;/p&gt;
+&lt;h2 id="a-word-about-random-forest-classification"&gt;A Word About Random Forest Classification&lt;/h2&gt;
+&lt;p&gt;A common tool used for regression and classification is the &lt;strong&gt;decision tree&lt;/strong&gt;,
+which is a tree-like structure beginning with a &lt;em&gt;root&lt;/em&gt;.
+From this starting node, which includes the entire sample, the algorithm decides
+which of the input features provides the most information for differentiating
+the sample data (i.e. player-seasons). The algorithm then splits the data on this feature.&lt;/p&gt;
+&lt;p&gt;The formula for &lt;em&gt;information gain&lt;/em&gt; provided by a new feature is given by
+the difference between the entropy for the current node, $E(X)$, and weighted
+sum of the entropies of the nodes resulting from splitting the data on the new
+feature, $E(X | Y)$:&lt;/p&gt;
+&lt;p&gt;$$
+IG(X, Y) = E(X) - E(X | Y)
+$$&lt;/p&gt;
+&lt;p&gt;The entropy of $E(X)$ is simply calculated from each $p_i$ (the probability/proportion
+of the $i$th class):&lt;/p&gt;
+&lt;p&gt;$$ E(X) = - \sum_i p_i \log{p_i} $$&lt;/p&gt;
+&lt;p&gt;The entropy $E(X | Y)$ is weighted by number of samples in each resultant node,
+preventing an insignificant node from dominating the entropy.&lt;/p&gt;
+&lt;p&gt;The algorithm repeats this process for each node, each time computing
+the information gain for the remaining input features. In this way,
+a tree is "grown" in descending order of information gain. For a nice, detailed
+explanation broken down using examples, see
+&lt;a href="https://towardsdatascience.com/entropy-how-decision-trees-make-decisions-2946b9c18c8"&gt;this article&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;Now, if we can grow a tree, why not grow a forest? A &lt;strong&gt;random forest&lt;/strong&gt; is a
+collection of many decision trees, which is highly advantageous for many problems.
+Each tree is a random sub-sample of the input training data (a sampling technique
+known as &lt;em&gt;bootstrapping&lt;/em&gt;), and each tree uses a subset of input features.
+A vote is tallied from each tree's prediction in order to determine the overall
+prediction, essentially averaging over all estimators. This entire process is known
+as &lt;em&gt;bagging&lt;/em&gt;, short for &lt;em&gt;bootstrap aggregation&lt;/em&gt;.&lt;/p&gt;
+&lt;p&gt;Below is a cartoon from
+&lt;a href="https://towardsdatascience.com/from-a-single-decision-tree-to-a-random-forest-b9523be65147"&gt;this article&lt;/a&gt;
+by Rosaria Silipo and Kathrin Melcher.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/player_comp/random_forest_combined.jpg"&gt;
+&lt;img src="/files/player_comp/random_forest_combined.jpg" alt="Image of random decision tree forest." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;A random forest of decision trees. At the bottom is a simple
+example of data bootstrapping and random feature selection for various trees.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;The strengths of this algorithm are that it can handle missing values, it automatically
+accounts for relative feature importance, and it avoids overfitting by cancelling out
+the large variance associated with each tree.&lt;/p&gt;
+&lt;p&gt;As we will see, our model will consist of 181 output labels, which
+is the number of veteran players who played for the last 4 complete NBA seasons
+(2016-2019). Not only are there many labels, but there are also many input features
+to differentiate style of play. What's more, we only have 3 samples per label to work
+with if we leave out one season as a test dataset.&lt;/p&gt;
+&lt;p&gt;For all these reasons, the Random Forest model is the ideal candidate
+for performing player classification.&lt;/p&gt;
+&lt;h2 id="feature-selection"&gt;Feature Selection&lt;/h2&gt;
+&lt;p&gt;Through some exploratory data analysis which I will not thoroughly detail here,
+combined with some basketball logic and intuition, the input features below were selected
+for the random forest classification (RFC).&lt;/p&gt;
+&lt;p&gt;Shown is a Python snippet which displays the relevant features in a Pandas
+dataframe, which was the result of data scraping from a variety of NBA data sources.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="c1"&gt;# Specify which dataframe columns to use as model features&lt;/span&gt;
+&lt;span class="n"&gt;feature_list&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;height&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;weight&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FG_FREQ_05FT&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FG_FREQ_59FT&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FG_FREQ_1014FT&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FG_FREQ_1519FT&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FG_FREQ_2024FT&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FG_FREQ_GT24FT&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FG_FREQ_CANDS&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;FTR&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;ASTR&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;TOR&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;ORR&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;DRR&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;BLK_PH&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;STL_PH&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;DFGP_PG&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Display the dataframe with selected features&lt;/span&gt;
+&lt;span class="n"&gt;pd&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;set_option&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;display.max_columns&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;13&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;name&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;+&lt;/span&gt; &lt;span class="n"&gt;feature_list&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;figure&gt;
+&lt;a href="/files/player_comp/player_class_features_table.png"&gt;
+&lt;img src="/files/player_comp/player_class_features_table.png" alt="A Pandas dataframe showing the data used as classifier model input." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;These stats can be summarized as follows:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;'height' -- player height in inches&lt;/li&gt;
+&lt;li&gt;'weight' -- player weight in lbs&lt;/li&gt;
+&lt;li&gt;'FG_FREQ_05FT' -- percentage of shots from 0-5 ft. from the basket&lt;/li&gt;
+&lt;li&gt;'FG_FREQ_59FT' -- percentage of shots from 5-9 ft. from the basket&lt;/li&gt;
+&lt;li&gt;'FG_FREQ_1014FT' -- percentage of shots from 10-14 ft. from the basket&lt;/li&gt;
+&lt;li&gt;'FG_FREQ_1519FT' -- percentage of shots from 15-19 ft. from the basket&lt;/li&gt;
+&lt;li&gt;'FG_FREQ_2024FT' -- percentage of shots from 20-24 ft. from the basket&lt;/li&gt;
+&lt;li&gt;'FG_FREQ_GT24FT' -- percentage of shots from &amp;gt; 24 ft. from the basket&lt;/li&gt;
+&lt;li&gt;'FG_FREQ_CANDS' -- percentage of shots that are catch-and-shoot (no dribbles)&lt;/li&gt;
+&lt;li&gt;'FTR' -- free throw rate&lt;/li&gt;
+&lt;li&gt;'ASTR' -- assist rate&lt;/li&gt;
+&lt;li&gt;'TOR' -- turnover rate&lt;/li&gt;
+&lt;li&gt;'ORR' -- offensive rebounding rate&lt;/li&gt;
+&lt;li&gt;'DRR' -- defensive rebounding rate&lt;/li&gt;
+&lt;li&gt;'BLK_PH' -- shot blocks (per 100 possessions)&lt;/li&gt;
+&lt;li&gt;'STL_PH' -- steals (per 100 possessions)&lt;/li&gt;
+&lt;li&gt;'DFGP_PG' -- defensive/opponent field goal percentage&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Note that &lt;em&gt;height&lt;/em&gt; and &lt;em&gt;weight&lt;/em&gt; are hardly "play-style" attributes, but rather
+physical attributes. They are still important since strict lines between player
+positions, e.g. point guards, shooting guards, centers, etc., are becoming increasingly
+blurred in the modern NBA, but a player's size still determines how a player is utilized.&lt;/p&gt;
+&lt;p&gt;The offensive stats are relatively self-explanatory; we largely differentiate a player
+by where on the floor they take their shots, how often they draw fouls, and how often they
+make plays or rebound the ball.&lt;/p&gt;
+&lt;p&gt;A player's defense is more difficult to quantify, however the opponent's defensive field
+goal percentage is included to account for man-on-man defense in addition to a player's
+blocks and steals.&lt;/p&gt;
+&lt;p&gt;It is worth noting that this list is neither exhaustive nor completely optimized.
+These resulted in decent accuracy, however there are a variety of unused additional
+stats that would be interesting to leverage. For example, I have also scraped play-type
+stats: how often does a player score on pick-and-rolls? Put-backs? Isolation plays?
+However, this would greatly increase the number of features and statistical interactions
+have not been thoroughly studied.&lt;/p&gt;
+&lt;h2 id="creating-a-random-forest-model"&gt;Creating a Random Forest Model&lt;/h2&gt;
+&lt;p&gt;To create the RFC model, we first separate the input data into veterans and rookies.
+Here, veterans are all players who played in &lt;em&gt;each&lt;/em&gt; season from 2016-2019,
+while rookies only played in the 2019 season.&lt;/p&gt;
+&lt;p&gt;I then divide the veteran dataset into a training set (3 seasons)
+and a testing set (the 2019 season), as out-of-sample testing will be used to
+calculate the unbiased accuracy of our model. I also separate the training
+and testing datasets into input features and output labels (the player names).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="c1"&gt;# Create separate dataframes for established players and rookies&lt;/span&gt;
+&lt;span class="n"&gt;df_vets&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isin&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;value_counts&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;value_counts&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;4&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;span class="n"&gt;df_train&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_vets&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;df_vets&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;year&lt;/span&gt; &lt;span class="o"&gt;&amp;lt;&lt;/span&gt; &lt;span class="mi"&gt;2019&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;df_test&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_vets&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;df_vets&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;year&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;2019&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="n"&gt;df_rooks&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;isin&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;value_counts&lt;/span&gt;&lt;span class="p"&gt;()[&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;value_counts&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;)]&lt;/span&gt;
+&lt;span class="n"&gt;df_rooks&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_rooks&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;df_rooks&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;year&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;2019&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Create input features and target labels (player names) for test data&lt;/span&gt;
+&lt;span class="n"&gt;test_labels&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_test&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+&lt;span class="n"&gt;test_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_test&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;feature_list&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="c1"&gt;# Create matching training dataset using only veterans who are still in the NBA&lt;/span&gt;
+&lt;span class="c1"&gt;# (and thus have available training data)&lt;/span&gt;
+&lt;span class="n"&gt;train_labels&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_train&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+&lt;span class="n"&gt;train_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_train&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;feature_list&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;In order to properly fit our input training data, it is also a good idea
+to scale the input features to unit variance and subtract their means.
+This is a good habit when training machine learning algorithms to aid in
+model convergence and avoid feature biases.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="c1"&gt;# Scale features which will be used in model fitting&lt;/span&gt;
+&lt;span class="c1"&gt;# (for both training and testing datasets)&lt;/span&gt;
+&lt;span class="n"&gt;scale_train&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;StandardScaler&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;train_features&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;train_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;scale_train&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;train_features&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;test_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;scale_train&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;test_features&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;A comprehensive grid search is performed on the various hyperparameters
+of the &lt;code&gt;RandomForestClassifier&lt;/code&gt; in scikit-learn, using the &lt;code&gt;GridSearchCV&lt;/code&gt;
+&lt;em&gt;k&lt;/em&gt;-fold cross validation method.
+This is actually quite time intensive, but worth it given the
+large number of features and output labels.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="c1"&gt;# Perform a comprehensive grid search to optimize parameters for Random Forest classification&lt;/span&gt;
+&lt;span class="n"&gt;n_estimators&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2000&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5000&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;max_depth&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;15&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;30&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;min_samples_split&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;2&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;min_samples_leaf&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="n"&gt;param_grid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;n_estimators&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;n_estimators&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;max_depth&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;max_depth&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;min_samples_split&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;min_samples_split&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="s1"&gt;&amp;#39;min_samples_leaf&amp;#39;&lt;/span&gt; &lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;min_samples_leaf&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="n"&gt;grid_search&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;GridSearchCV&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;RandomForestClassifier&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;random_state&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;param_grid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cv&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;train_features&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;train_labels&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ravel&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+&lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;best_params_&lt;/span&gt;
+&lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Optimized hyperparameters:&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;best_params_&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;rfc&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;RandomForestClassifier&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;
+    &lt;span class="n"&gt;n_estimators&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;best_params_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;n_estimators&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+    &lt;span class="n"&gt;max_depth&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;best_params_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;max_depth&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+    &lt;span class="n"&gt;min_samples_split&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;best_params_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;min_samples_split&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt;
+    &lt;span class="n"&gt;min_samples_leaf&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;best_params_&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;min_samples_leaf&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;rfc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;train_features&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;train_labels&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ravel&lt;/span&gt;&lt;span class="p"&gt;())&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Once the hyperparameters are optimized, we fit the training data
+to create our RFC model.&lt;/p&gt;
+&lt;p&gt;The model is then run on our test dataset (the 2019 dataset for each
+veteran player). The accuracy here is then simply the fraction of
+veterans that were properly identified with themselves (from previous seasons).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="c1"&gt;# Run the classifier model on the test data&lt;/span&gt;
+&lt;span class="n"&gt;y_pred&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;rfc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;test_features&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Classified veteran players with an accuracy of&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;sum&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;test_labels&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="o"&gt;==&lt;/span&gt;&lt;span class="n"&gt;y_pred&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mf"&gt;100.&lt;/span&gt;&lt;span class="o"&gt;/&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;y_pred&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;&lt;span class="o"&gt;*&lt;/span&gt;&lt;span class="mf"&gt;1.&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;%&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;Output:
+Classified&lt;span class="w"&gt; &lt;/span&gt;veteran&lt;span class="w"&gt; &lt;/span&gt;players&lt;span class="w"&gt; &lt;/span&gt;with&lt;span class="w"&gt; &lt;/span&gt;an&lt;span class="w"&gt; &lt;/span&gt;accuracy&lt;span class="w"&gt; &lt;/span&gt;of&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="m"&gt;92&lt;/span&gt;.81767955801105&lt;span class="w"&gt; &lt;/span&gt;%
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;As we can see, we correctly predict that veteran players are themselves with
+great accuracy, despite season-to-season variation. This is not far-fetched,
+since we are providing the player's physical attributes, however given
+fluctuations in the other stats this is still a solid result.&lt;/p&gt;
+&lt;h2 id="results-for-rookies-in-the-2019-season"&gt;Results for Rookies in the 2019 Season&lt;/h2&gt;
+&lt;p&gt;Once we have a trained and tested model, we can ideally run the classifier
+on any player not used in the training data to find their best player "comp".&lt;/p&gt;
+&lt;p&gt;It is worth noting: this is &lt;em&gt;not&lt;/em&gt; a comparison of production or value.
+Aside from defensive FGP, the features used in the model are &lt;em&gt;rate&lt;/em&gt; or &lt;em&gt;frequency&lt;/em&gt;
+stats meant to characterize play style rather than performance.&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="c1"&gt;# Format rookie dataset for input into the classifier and&lt;/span&gt;
+&lt;span class="c1"&gt;# attempt to classify rookies by their most similar veteran counterpart&lt;/span&gt;
+&lt;span class="n"&gt;pred_labels&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_rooks&lt;/span&gt;&lt;span class="p"&gt;[[&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;name&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;]]&lt;/span&gt;
+&lt;span class="n"&gt;pred_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;df_rooks&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;feature_list&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+
+&lt;span class="n"&gt;pred_features&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;scale_train&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;transform&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pred_features&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;rook_pred&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;rfc&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;predict&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;pred_features&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;pred&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="nb"&gt;enumerate&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;rook_pred&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;Predicted that Rookie&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pred_labels&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;name&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;values&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;i&lt;/span&gt;&lt;span class="p"&gt;],&lt;/span&gt; &lt;span class="s2"&gt;&amp;quot;is similar to Player:&amp;quot;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;pred&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;Output:
+Predicted&lt;span class="w"&gt; &lt;/span&gt;that&lt;span class="w"&gt; &lt;/span&gt;Rookie&lt;span class="w"&gt; &lt;/span&gt;Aaron&lt;span class="w"&gt; &lt;/span&gt;Holiday&lt;span class="w"&gt; &lt;/span&gt;is&lt;span class="w"&gt; &lt;/span&gt;similar&lt;span class="w"&gt; &lt;/span&gt;to&lt;span class="w"&gt; &lt;/span&gt;Player:&lt;span class="w"&gt; &lt;/span&gt;Isaiah&lt;span class="w"&gt; &lt;/span&gt;Canaan
+Predicted&lt;span class="w"&gt; &lt;/span&gt;that&lt;span class="w"&gt; &lt;/span&gt;Rookie&lt;span class="w"&gt; &lt;/span&gt;Alfonzo&lt;span class="w"&gt; &lt;/span&gt;McKinnie&lt;span class="w"&gt; &lt;/span&gt;is&lt;span class="w"&gt; &lt;/span&gt;similar&lt;span class="w"&gt; &lt;/span&gt;to&lt;span class="w"&gt; &lt;/span&gt;Player:&lt;span class="w"&gt; &lt;/span&gt;JaMychal&lt;span class="w"&gt; &lt;/span&gt;Green
+Predicted&lt;span class="w"&gt; &lt;/span&gt;that&lt;span class="w"&gt; &lt;/span&gt;Rookie&lt;span class="w"&gt; &lt;/span&gt;Boban&lt;span class="w"&gt; &lt;/span&gt;Marjanovic&lt;span class="w"&gt; &lt;/span&gt;is&lt;span class="w"&gt; &lt;/span&gt;similar&lt;span class="w"&gt; &lt;/span&gt;to&lt;span class="w"&gt; &lt;/span&gt;Player:&lt;span class="w"&gt; &lt;/span&gt;Jusuf&lt;span class="w"&gt; &lt;/span&gt;Nurkic
+...&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="o"&gt;(&lt;/span&gt;Luka&lt;span class="w"&gt; &lt;/span&gt;Doncic&lt;span class="w"&gt; &lt;/span&gt;→&lt;span class="w"&gt; &lt;/span&gt;James&lt;span class="w"&gt; &lt;/span&gt;Harden,&lt;span class="w"&gt; &lt;/span&gt;Trae&lt;span class="w"&gt; &lt;/span&gt;Young&lt;span class="w"&gt; &lt;/span&gt;→&lt;span class="w"&gt; &lt;/span&gt;Jeff&lt;span class="w"&gt; &lt;/span&gt;Teague,&lt;span class="w"&gt; &lt;/span&gt;Landry&lt;span class="w"&gt; &lt;/span&gt;Shamet&lt;span class="w"&gt; &lt;/span&gt;→&lt;span class="w"&gt; &lt;/span&gt;Marco&lt;span class="w"&gt; &lt;/span&gt;Belinelli,&lt;span class="w"&gt; &lt;/span&gt;etc.&lt;span class="o"&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Shown above are the predictions for each 2019 rookie. Just to get a sense
+that these comparisons are sensible, let's dive into an example.&lt;/p&gt;
+&lt;h2 id="an-example-comparison"&gt;An Example Comparison&lt;/h2&gt;
+&lt;p&gt;Our classifier algorithm found Landry Shamet and Marco Belinelli to have
+matching play styles. Shamet came into the league with low expectations,
+but was a pleasant surprise and made an early impact as a shooter on the
+L.A. Clippers. Belinelli is a veteran player also known for his exceptional
+shooting skills off the bench.&lt;/p&gt;
+&lt;p&gt;We can simply plot these players in a number of feature spaces and
+examine how similar they really are.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/player_comp/shamet_belinelli_comp.png"&gt;
+&lt;img src="/files/player_comp/shamet_belinelli_comp.png" alt="Comparison plots for Landry Shamet and Marco Belinelli." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;A comparison of Landry Shamet (black) and Marco Belinelli's seasons (red).&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;As we can see, they are indeed very similar. They are both lanky
+shooting guards who like to shoot deep 3-pointers.
+They are both limited play-makers who get around half their shots from
+catch-and-shoot action (i.e. without dribbling before the shot).
+Belinelli tended to shoot more free throws over the last few years,
+but this could merely indicate that he is older and more experienced
+with drawing fouls.&lt;/p&gt;
+&lt;h2 id="why-is-this-useful"&gt;Why is this useful?&lt;/h2&gt;
+&lt;p&gt;NBA team front offices and scouting teams spend an enormous amount of time
+scouting and evaluating players. Scouts fly all over the world to watch players
+live, they organize workouts to perform the "eye test", and the media
+often portrays a player in a light that effectively skews general perception.&lt;/p&gt;
+&lt;p&gt;In short, biases are a part of the evaluation system. This algorithm is a method
+for providing a direct comparison with veteran players who are successful enough
+to have found a role in the league.&lt;/p&gt;
+&lt;p&gt;Not only does this classification tool provide an unbiased label that may
+not have been considered by glancing at a box score, it also allows front offices
+to seek out cheap talent to fill a specific role. If a rebuilding team is looking
+for a young backup catch-and-shoot guard who plays tenacious defense, this algorithm
+may indicate which players are closer to Klay Thompson than James Harden.&lt;/p&gt;</content><category term="Sports Data Science"/></entry><entry><title>An RAPM Model to Assess NBA Players</title><link href="https://jecutter.github.io/blog/rapm-model/" rel="alternate"/><published>2020-03-28T00:00:00-07:00</published><updated>2020-03-28T00:00:00-07:00</updated><author><name>Jacob Cutter</name></author><id>tag:jecutter.github.io,2020-03-28:/blog/rapm-model/</id><summary type="html">&lt;p&gt;Developing a lineup-independent NBA player impact model using ridge regression techniques on play-by-play data.&lt;/p&gt;</summary><content type="html">&lt;p&gt;If you are like me, you watch NBA basketball games with a healthy mixture of
+enthusiasm for the game and skepticism of the media-driven narratives. In the last
+several years, I noticed a wide variety of advanced stats being thrown around by fans
+and media members alike, seemingly to justify their biased conclusions about players
+with highly subjective analysis. What's more, these stats are frequently used
+as definitive arguments for end-of-season awards, such as MVP.&lt;/p&gt;
+&lt;p&gt;You hear things like:
+"Player X is clearly superior to Player Y because he ranks higher in categories
+A, B, and C."
+Inevitably, you hear the response: "We all know stats A, B, and C
+don't necessarily translate to winning games!"&lt;/p&gt;
+&lt;p&gt;Even with such advanced stats, there is sometimes widespread disagreement
+about a player's impact or value. There are multiple issues at play with these stats:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;They are heavily influenced by simple box score stats, some of which have arguable relevance to a player's overall impact.&lt;/li&gt;
+&lt;li&gt;Many of them are generated using historical data, biasing more recent evaluations.&lt;/li&gt;
+&lt;li&gt;They are often taken out of applicable context (perhaps due to lack of transparency).&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;Below, I will discuss my own attempt to "objectively" assess player impact by
+creating a RAPM model and compare those results with existing stats. However, some words
+are in order about the existing landscape of advanced stats.&lt;/p&gt;
+&lt;h2 id="player-impact-metrics"&gt;Player Impact Metrics&lt;/h2&gt;
+&lt;p&gt;To get a broad survey of existing methodologies, let's take a look at just
+some of the most popular advanced player stats that exist (follow the links
+to get a more detailed description):&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href="https://www.basketball-reference.com/about/per.html"&gt;Hollinger's Player Efficiency Rating (PER)&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://squared2020.com/2017/09/18/deep-dive-on-regularized-adjusted-plus-minus-i-introductory-example/"&gt;Plus-Minus/Adjusted Plus-Minus/RAPM&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.basketball-reference.com/about/bpm2.html"&gt;Box Plus-Minus (BPM), by Daniel Myers&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.espn.com/nba/story/_/id/10740818/introducing-real-plus-minus"&gt;ESPN's Real Plus-Minus (RPM), by Jeremias Engelmann&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href="https://www.bball-index.com/player-impact-plus-minus/"&gt;Player Impact Plus-Minus (PIPM), by Jacob Goldstein of BBall Index&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Such player impact stats can be roughly categorized as follows:
+purely box score--based stats, Statistical Plus-Minus (SPM) models, and actual
+Plus-Minus models (usually based on RAPM).&lt;/p&gt;
+&lt;p&gt;PER belongs to the first category. It is an all-in-one stat which
+uses a fixed formula to give a measure of player production from simple box score stats
+(e.g. points, rebounds, assists, turnovers, steals, blocks, personal fouls).
+While PER succeeds in combining box score stats into a single number, there are
+&lt;a href="https://thezscore.com/2016/02/17/the-definitive-per-criticism/"&gt;plenty of criticisms surrounding its methodology and biases&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;BPM falls into the category of SPM models. While it is also based on box score stats,
+it is a regression against historical RAPM datasets to determine the coefficients which
+weight each feature (RAPM, a variant of plus-minus, will be discussed below). In other words, SPM
+models are linear estimators of RAPM.&lt;/p&gt;
+&lt;p&gt;It is easy to see why box score--based stats are limited; this can't possibly
+encompass the entirety of a player's impact! Consider some of the things not taken
+into account by simple box score stats:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Man-on-man and help defense&lt;/li&gt;
+&lt;li&gt;Screen-setting to open up shooters&lt;/li&gt;
+&lt;li&gt;Player gravity (drawing the defense)&lt;/li&gt;
+&lt;li&gt;Floor spacing (threat of deep 3-point shooting)&lt;/li&gt;
+&lt;li&gt;Quality of passing (&lt;em&gt;not&lt;/em&gt; the same as the rate of assists or turnovers)&lt;/li&gt;
+&lt;li&gt;Intangibles (e.g. leadership, communication on defense, etc.)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;We would like to capture a player's intangibles, or anything that is not shown
+by the box score. Plus-Minus based stats may be used for this purpose, since they
+are based purely on overall team success when the player is on the floor.
+The advanced stats we have not yet discussed, RPM and PIPM, are both based on
+RAPM, which is a successor of Plus-Minus. Let's take a deeper look at what this
+means, and why this technique is so prominent in basketball analytics.&lt;/p&gt;
+&lt;h2 id="what-is-regularized-adjusted-plus-minus"&gt;What is Regularized Adjusted Plus-Minus?&lt;/h2&gt;
+&lt;p&gt;The original &lt;strong&gt;Plus-Minus&lt;/strong&gt; stat is simply the point differential a team experiences when a player
+is on the floor (i.e. points scored by the team minus points scored against the team).
+However, it is well-established that this metric is deceptive, since a player surrounded
+by highly skilled teammates will have an inflated Plus-Minus.&lt;/p&gt;
+&lt;p&gt;To answer this, an &lt;strong&gt;Adjusted Plus-Minus (APM)&lt;/strong&gt; was created to account for these effects.
+This essentially means creating a $n \times m$ matrix $X$ of &lt;em&gt;n&lt;/em&gt; possessions by &lt;em&gt;m&lt;/em&gt;
+players involved in all those possessions. We can set entries to $1$ if the player is on offense
+in the possession, $-1$ if on defense, and $0$ if not on the floor. We can then formulate a matrix
+equation to solve for the coefficients $\beta$ that give the resulting point differentials $Y$:&lt;/p&gt;
+&lt;p&gt;$$
+Y = X \beta \
+X^T Y = X^T X \beta \
+\beta = (X^T X)^{-1} X^T Y
+$$&lt;/p&gt;
+&lt;p&gt;We then approximate the $\beta$ coefficients by solving for the &lt;strong&gt;least-squares solution&lt;/strong&gt; to
+the matrix equation. This yields $\beta$ values which actually represent the player contributions,
+removing the effect of teammates and opposing players.&lt;/p&gt;
+&lt;p&gt;These coefficients are the player APM values. However, because of multicollinearity, the results
+have enormous variance. Luckily, there is a statistical technique for dealing with this very issue:
+&lt;strong&gt;L2 regularization&lt;/strong&gt;, or &lt;strong&gt;ridge regression&lt;/strong&gt;. This is a well-known method for penalizing
+outlier values back to the central value, to reduce variance at the expense of bias.&lt;/p&gt;
+&lt;p&gt;Ridge regression is performed by modifying the least squares formulation with a
+diagonal perturbation matrix $\lambda I$:&lt;/p&gt;
+&lt;p&gt;$$
+\beta = (X^T Y + \lambda I)^{-1} X^T Y
+$$&lt;/p&gt;
+&lt;p&gt;The $\lambda$ value is a model hyperparameter that must be tuned to stabilize the $\beta$
+coefficients. Note that in the limit that $\lambda \to 0$, we
+recover least squares; in the limit $\lambda \to \infty$, $\beta$ shrinks to $0$.&lt;/p&gt;
+&lt;p&gt;In this case, the resulting $\beta$ coefficients are the RAPM values, or the &lt;strong&gt;Regularized Adjusted Plus-Minus&lt;/strong&gt;
+for each player. To be clear, these values &lt;em&gt;are not absolute points added&lt;/em&gt;. This
+regularization technique results in coefficients that are scaled by a factor dependent on $\lambda$.
+The RAPM values should therefore be taken as a relative stat, or a differential contribution.&lt;/p&gt;
+&lt;p&gt;Circling back, how do our advanced stats incorporate RAPM? SPM models like
+BPM use RAPM &lt;em&gt;strictly as an input&lt;/em&gt; to find the model coefficients.
+RPM and PIPM, on the other hand, are essentially "enhanced" RAPM models which use
+&lt;strong&gt;Bayesian priors&lt;/strong&gt; to constrain the $\beta$ coefficients based on a fit to historical
+RAPM datasets. As we will discuss, this puts a potentially biased emphasis on box score stats.&lt;/p&gt;
+&lt;h2 id="harvesting-matchups-from-play-by-play-data"&gt;Harvesting Matchups from Play-by-Play Data&lt;/h2&gt;
+&lt;p&gt;In order to create my own RAPM model, I constructed a matrix $X$ as explained above,
+as well as the point differential resulting from each row (each &lt;em&gt;matchup stint&lt;/em&gt;).
+I performed the following procedure:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Scrape play-by-play data from all NBA games over several seasons&lt;/li&gt;
+&lt;li&gt;Parse the PBP data into &lt;em&gt;stints&lt;/em&gt;, or matchups between player lineups (that may last a number of possessions)&lt;/li&gt;
+&lt;li&gt;Calculate the point differential resulting from each stint, and from that the $Y$ array (which is actually the plus-minus per 100 possessions)&lt;/li&gt;
+&lt;li&gt;Create a matrix $X$ with $n$ stints (rows) and $m$ NBA players (columns)&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;To scrape the data, I used a Selenium web driver in Python to parse
+play-by-play data from &lt;a href="https://stats.nba.com/game/0021600001/playbyplay/"&gt;NBA.com&lt;/a&gt;.
+These tables track the score and provide raw text data for analyzing the content of each
+play. In addition, the starting lineup for each quarter was fetched separately, allowing
+for player rotations to be tracked throughout a game. This is crucial for monitoring which
+lineups are out on the floor at any time.&lt;/p&gt;
+&lt;p&gt;The full scraping and wrangling codes can be
+&lt;a href="https://github.com/jecutter/nba-data-models"&gt;found at my Github&lt;/a&gt;.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/rapm_model/example_stint_table.png"&gt;
+&lt;img src="/files/rapm_model/example_stint_table.png" alt="Example stint table" /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;An example table of lineup matchup stints as a Pandas dataframe. Note that
+the raw point differential, number of possessions for each stint, and plus-minus
+per 100 possessions are shown.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Once we've isolated each matchup, we can parse the lineups into individual players
+for the home and away teams. Since we are taking the results of a stint, rather than
+single possessions, each team has been on both offense and defense. Therefore, we
+give home team players a matrix entry of $1$, away team players an entry of $-1$,
+and players not on the floor an entry of $0$. We then take $Y$ to be the home team
+plus-minus per 100 possessions.&lt;/p&gt;
+&lt;p&gt;This can be done with a Python function as shown below:&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="k"&gt;def&lt;/span&gt;&lt;span class="w"&gt; &lt;/span&gt;&lt;span class="nf"&gt;GenerateMatchupMatrix&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;player_list&lt;/span&gt;&lt;span class="p"&gt;):&lt;/span&gt;
+    &lt;span class="n"&gt;matchup_plus_minus&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[]&lt;/span&gt;
+    &lt;span class="n"&gt;rapm_matrix&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;zeros&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;shape&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt;&lt;span class="nb"&gt;len&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;player_list&lt;/span&gt;&lt;span class="p"&gt;)),&lt;/span&gt; &lt;span class="n"&gt;dtype&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="nb"&gt;float&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;0&lt;/span&gt;
+
+    &lt;span class="k"&gt;for&lt;/span&gt; &lt;span class="n"&gt;index&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stint&lt;/span&gt; &lt;span class="ow"&gt;in&lt;/span&gt; &lt;span class="n"&gt;df&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;iterrows&lt;/span&gt;&lt;span class="p"&gt;():&lt;/span&gt;
+        &lt;span class="k"&gt;if&lt;/span&gt; &lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="o"&gt;%&lt;/span&gt;&lt;span class="mi"&gt;100&lt;/span&gt; &lt;span class="o"&gt;==&lt;/span&gt; &lt;span class="mi"&gt;0&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;write&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s2"&gt;&amp;quot;&lt;/span&gt;&lt;span class="se"&gt;\r&lt;/span&gt;&lt;span class="s2"&gt;On Stint &lt;/span&gt;&lt;span class="si"&gt;%i&lt;/span&gt;&lt;span class="s2"&gt;...&amp;quot;&lt;/span&gt; &lt;span class="o"&gt;%&lt;/span&gt; &lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="o"&gt;+&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;))&lt;/span&gt;
+            &lt;span class="n"&gt;sys&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;stdout&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;flush&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+
+        &lt;span class="n"&gt;matchup_plus_minus&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;append&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;stint&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ht_pm_ph&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+        &lt;span class="n"&gt;f_ht_p&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;f_allp_ind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;f_htl_ind&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;intersect1d&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;player_list&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stint&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;ht_lineup&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;,&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;return_indices&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="kc"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;rapm_matrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;f_allp_ind&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+        &lt;span class="n"&gt;f_vt_p&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;f_allp_ind&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;f_vtl_ind&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;np&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;intersect1d&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;player_list&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;stint&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;vt_lineup&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;split&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;,&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;),&lt;/span&gt; &lt;span class="n"&gt;return_indices&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="kc"&gt;True&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+        &lt;span class="n"&gt;rapm_matrix&lt;/span&gt;&lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="n"&gt;idx&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt;&lt;span class="n"&gt;f_allp_ind&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="o"&gt;-&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;
+
+        &lt;span class="n"&gt;idx&lt;/span&gt; &lt;span class="o"&gt;+=&lt;/span&gt; &lt;span class="mi"&gt;1&lt;/span&gt;
+
+    &lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;&lt;/span&gt;&lt;span class="se"&gt;\n&lt;/span&gt;&lt;span class="s1"&gt; Finished!&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+    &lt;span class="k"&gt;return&lt;/span&gt; &lt;span class="n"&gt;rapm_matrix&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;matchup_plus_minus&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;Once we have $X$ and $Y$, we can build a ridge regression model to
+estimate the coefficients $\beta$.&lt;/p&gt;
+&lt;h2 id="developing-a-ridge-regression-model"&gt;Developing a Ridge Regression Model&lt;/h2&gt;
+&lt;p&gt;In order to optimize our ridge regression model, we will use the matchup matrix
+$X$ and matchup point differential $Y$ as our training data and perform
+&lt;em&gt;k&lt;/em&gt;-fold cross-validation to use the training data itself for validation.
+This is important, since we have only 3 seasons of NBA data (2017-2019).&lt;/p&gt;
+&lt;p&gt;In Python, we use the &lt;code&gt;Ridge&lt;/code&gt; model from scikit-learn along with the &lt;code&gt;GridSearchCV&lt;/code&gt;
+method to perform cross-validation on a comprehensive set of $\lambda$ parameters
+(Note: $\lambda \equiv \alpha$ in the &lt;code&gt;Ridge&lt;/code&gt; model).&lt;/p&gt;
+&lt;div class="highlight"&gt;&lt;pre&gt;&lt;span&gt;&lt;/span&gt;&lt;code&gt;&lt;span class="n"&gt;x_train&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;rapm_matrix&lt;/span&gt;
+&lt;span class="n"&gt;y_train&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;matchup_plus_minus&lt;/span&gt;
+
+&lt;span class="n"&gt;ridge_reg&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;Ridge&lt;/span&gt;&lt;span class="p"&gt;()&lt;/span&gt;
+&lt;span class="n"&gt;alphas&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;[&lt;/span&gt;&lt;span class="mi"&gt;1&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;10&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;50&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;100&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;500&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1000&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;1500&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;2000&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;3000&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="mi"&gt;5000&lt;/span&gt;&lt;span class="p"&gt;]&lt;/span&gt;
+&lt;span class="n"&gt;param_grid&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;alpha&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="n"&gt;alphas&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;span class="n"&gt;grid_search&lt;/span&gt; &lt;span class="o"&gt;=&lt;/span&gt; &lt;span class="n"&gt;GridSearchCV&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;ridge_reg&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;param_grid&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;cv&lt;/span&gt;&lt;span class="o"&gt;=&lt;/span&gt;&lt;span class="mi"&gt;3&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+&lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;fit&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="n"&gt;x_train&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;y_train&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="nb"&gt;print&lt;/span&gt;&lt;span class="p"&gt;(&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;Optimized hyperparameters:&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;,&lt;/span&gt; &lt;span class="n"&gt;grid_search&lt;/span&gt;&lt;span class="o"&gt;.&lt;/span&gt;&lt;span class="n"&gt;best_params_&lt;/span&gt;&lt;span class="p"&gt;)&lt;/span&gt;
+
+&lt;span class="n"&gt;Output&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt;
+&lt;span class="o"&gt;&amp;gt;&amp;gt;&lt;/span&gt; &lt;span class="n"&gt;Optimized&lt;/span&gt; &lt;span class="n"&gt;hyperparameters&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="p"&gt;{&lt;/span&gt;&lt;span class="s1"&gt;&amp;#39;alpha&amp;#39;&lt;/span&gt;&lt;span class="p"&gt;:&lt;/span&gt; &lt;span class="mi"&gt;1500&lt;/span&gt;&lt;span class="p"&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;While &lt;em&gt;k&lt;/em&gt;-fold cross-validation is typically used to set $\lambda$,
+we can also make sense of our choice by plotting the calculated RAPM as a
+function of $\lambda$.&lt;/p&gt;
+&lt;p&gt;It is clear that the $\beta$ values for small $\lambda$ are highly unstable, as certain
+players experience a lot of variance. We can see that for our optimized $\lambda$ parameter,
+the best-- and worst--RAPM players are stable and begin to converge to the mean.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/rapm_model/rapm_model_tuning.png"&gt;
+&lt;img src="/files/rapm_model/rapm_model_tuning.png" alt="Plot showing the tuning of the ridge regression lambda parameter." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;A plot showing the regularization of player RAPM ratings as a function of lambda. On the right, we see the tightening of the correlation between RAPM and raw player +/- as lambda is increased.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;We therefore tune our hyperparameter with some degree of confidence.
+It is important to point out that our typical notion of out-of-sample
+model testing is compromised here; season-to-season variation in player performance
+is an unavoidable reality (for numerous reasons), and this model is meant to
+produce a &lt;em&gt;descriptive&lt;/em&gt; stat rather than a &lt;em&gt;predictive&lt;/em&gt; one. But more on that later.&lt;/p&gt;
+&lt;h2 id="evaluating-player-rapm-ratings"&gt;Evaluating Player RAPM Ratings&lt;/h2&gt;
+&lt;p&gt;Let's take a look at how various players fare in RAPM.&lt;/p&gt;
+&lt;p&gt;Along with play-by-play data, individual stats were scraped for NBA players, including
+net rating, BPM, and RPM (again, see my &lt;a href="https://github.com/jecutter/nba-data-models"&gt;Github&lt;/a&gt;).
+Note that &lt;em&gt;net rating&lt;/em&gt; is actually just the player's raw plus-minus per 100 possessions,
+which doesn't take into account the caliber of a player's supporting cast.&lt;/p&gt;
+&lt;p&gt;Below, we see the top 10 and bottom 10 players in RAPM (of players averaging $&amp;gt; 20$
+minutes per game), along with these other metrics.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/rapm_model/ordered_players_rapm.png"&gt;
+&lt;img src="/files/rapm_model/ordered_players_rapm.png" alt="Ordered players RAPM" /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Stephen Curry has league-leading RAPM over the last 3 years, which is not outlandish given
+that he is a transformative player of this era. It is more interesting that
+the top 5 players are &lt;em&gt;all&lt;/em&gt; guards -- smaller players, 3 of whom are considered excellent 2-way players
+and all of whom can shoot 3-pointers and make plays for others. Notice also that some
+players, especially Damian Lillard and Jrue Holiday, are highly underrated by ESPN's RPM.&lt;/p&gt;
+&lt;p&gt;If you are a basketball fan, I know you may scoff at the fact that Jrue Holiday is
+ranked "better" than LeBron James over a 3 year span. My response to this: the
+reasons you have for &lt;em&gt;assuming&lt;/em&gt; LeBron James would have a better regular season
+RAPM may be very biased. If you take away LeBron James's:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;Usage rate and time spent with the ball in his hands&lt;/li&gt;
+&lt;li&gt;Previous accomplishments (prior to 2017)&lt;/li&gt;
+&lt;li&gt;Playoff performances (we are only looking at the &lt;em&gt;regular season&lt;/em&gt;)&lt;/li&gt;
+&lt;li&gt;Media narratives&lt;/li&gt;
+&lt;li&gt;"Flashiness"&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;it is not so far-fetched. Think about it: Jrue Holiday is young, plays
+both ends of the floor, is an efficient scorer and play-maker,
+and has largely played a complementary role without an outstanding supporting cast.
+I'm not here to argue that Jrue Holiday is better than LeBron James in general,
+however the purpose of this exercise is to remove biased assumptions.&lt;/p&gt;
+&lt;p&gt;On the other hand, the players with the worst RAPM tend to be either
+aging, inexperienced, or considered lazy on at least one end of the floor.
+For instance, Trae Young is a rookie considered to be one of the worst defenders
+in the league.&lt;/p&gt;
+&lt;p&gt;An important note: I am by no means claiming these RAPM ratings are perfect
+or the end-all-be-all. These will of course have error, but still may provide
+some interesting unbiased perspective when evaluating players.&lt;/p&gt;
+&lt;h2 id="comparing-with-other-advanced-stats"&gt;Comparing with Other Advanced Stats&lt;/h2&gt;
+&lt;p&gt;To understand what we've calculated better, and how it relates to existing metrics,
+we can examine correlations with a variety of box score and advanced stats.&lt;/p&gt;
+&lt;p&gt;A useful tool for doing this is to make a Pearson correlation heatmap. This allows
+us to examine relationships between a large number of features and potentially informs
+us on what dependencies to examine further.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/rapm_model/pearson_correlation_rapm.png"&gt;
+&lt;img src="/files/rapm_model/pearson_correlation_rapm.png" alt="Plot showing Pearson correlation of RAPM with other advanced stats." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Shown in the matrix above are correlations between various player statistics averaged over
+the 2017-2019 seasons, including the previously discussed PER, BPM, RPM, and RAPM (within
+the green lines). The other abbreviated stats are: true shooting %, field goal attempts per
+100 possessions, free throw rate, opponent field goal %, assist-to-turnover ratio, rebound rate, blocks
+per 100 poss., and steals per 100 poss.&lt;/p&gt;
+&lt;p&gt;We can summarize some interesting points from this table:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;PER has a much higher correlation with field goal attempts than the other stats (it rewards players who simply take more shots)&lt;/li&gt;
+&lt;li&gt;PER, BPM, and RPM all have a slight correlation with player height, while RAPM is completely uncorrelated with height&lt;/li&gt;
+&lt;li&gt;PER, BPM, and RPM give much more weight to rebounds and blocks than RAPM (but interestingly, not steals)&lt;/li&gt;
+&lt;li&gt;RAPM is the most anticorrelated with opponent field goal %, which serves as a proxy for man-on-man defense (which is hard to quantify)&lt;/li&gt;
+&lt;li&gt;RAPM is less correlated with true shooting % than the other stats, though this is also true for the free throw rate (and free throws factor in to true shooting)&lt;/li&gt;
+&lt;li&gt;PER and RPM are more correlated with BPM than RAPM&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Taking all these observations together, it is reasonable to conclude that&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Other advanced stats appear to favor big men, including stats that are typical for big men (e.g. rebounds and blocks)&lt;/li&gt;
+&lt;li&gt;ESPN's RPM, one of the most popular and quoted advanced stats, appears to be highly dependent on box score stats&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;The explanation for this is that the RPM methodology uses box score priors
+calculated from a historical 15-year RAPM dataset (a cursory overview of such a technique is
+given in &lt;a href="https://fansided.com/2018/01/11/nylon-calculus-introducing-player-impact-plus-minus/"&gt;this article about PIPM&lt;/a&gt;).
+These &lt;strong&gt;Bayesian priors&lt;/strong&gt; are then used in the ridge regression to constrain the range of $\beta$ for various players,
+thus pre-estimating their value using their box score stats. While these priors are
+proprietary and not publicly available, it appears that the box score component is significant
+(and even &lt;a href="https://cornerthreehoops.wordpress.com/tag/rapm/"&gt;such factors as height and age are directly included&lt;/a&gt;).&lt;/p&gt;
+&lt;h2 id="conclusions"&gt;Conclusions&lt;/h2&gt;
+&lt;p&gt;At the beginning of this article, I provided 3 criticisms of current player
+impact metrics. Let's discuss how my RAPM ratings address each:&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;Box score dependence -- there is none, not even assumed box score priors.&lt;/li&gt;
+&lt;li&gt;Historical bias -- RAPM in this context is calculated from only a 3-year dataset, providing sufficient statistics without biasing regression models to a completely different era of basketball.&lt;/li&gt;
+&lt;li&gt;Context -- as I will make clear, my RAPM model is &lt;em&gt;not&lt;/em&gt; intended to be predictive, but is a fair assessment of player impact over the games included.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;After comparing with these other metrics, let me define RAPM as follows:
+&lt;em&gt;the relative ability of a player to positively influence possessions, regardless
+of their box score numbers, usage, or position&lt;/em&gt;. This is meant to be a &lt;em&gt;descriptive&lt;/em&gt; stat
+over selected seasons, and thus no attempt is made to develop box score priors to
+improve the season-to-season accuracy.&lt;/p&gt;
+&lt;p&gt;This exercise to create a minimally-biased player ranking is informative when comparing
+to the publicly available advanced stats, because it shows just how subjective these
+models are. In Bayesian statistics, it is common to employ Bayesian priors to constrain results.
+However, the choice of these priors and selection of features is subjective and
+somewhat defeats the strength of the RAPM method: to measure a player's overall impact
+and intangibles. If man-on-man defense is considered less valuable than a block, if a rebound
+is given more weight than a well-executed pass, and a taller player is given the edge over a
+shorter one, then our model loses its context-independence.&lt;/p&gt;
+&lt;p&gt;The true power of metrics like ESPN's RPM is its &lt;em&gt;predictive&lt;/em&gt; power. By regressing
+against a very large RAPM dataset to calculate priors, it can then predict a player's
+future RAPM with better accuracy. However, RPM is often used as a &lt;em&gt;descriptive&lt;/em&gt; stat
+to explain why a particular player has the edge in the current season, though RPM is tuned on
+box score stats from other seasons which don't necessarily reflect their current impact. This
+inevitably leads to underestimating over-achievers and vice versa.&lt;/p&gt;
+&lt;p&gt;As a descriptive stat, pure RAPM models may still be the most objective.
+It may not accurately tell us what impact a player will have next season, but yet
+again, can any stat do that reliably given unavoidable year-to-year variations
+(coaching change, team change, injuries, etc.)?
+No all-in-one stat gives a perfect player assessment, however we must be careful
+about how we apply any of these advanced stats and clearly state our assumptions.&lt;/p&gt;</content><category term="Sports Data Science"/></entry><entry><title>An Interactive Bokeh App for NBA Stats Exploration</title><link href="https://jecutter.github.io/blog/nba-stats-explorer/" rel="alternate"/><published>2020-01-20T00:00:00-08:00</published><updated>2020-01-20T00:00:00-08:00</updated><author><name>Jacob Cutter</name></author><id>tag:jecutter.github.io,2020-01-20:/blog/nba-stats-explorer/</id><summary type="html">&lt;p&gt;Building an interactive Bokeh dashboard to explore player, lineup, and play-by-play NBA data from scraped datasets.&lt;/p&gt;</summary><content type="html">&lt;p&gt;After scraping and cleaning NBA data from multiple sources — player bios and advanced stats, lineup aggregates, and full play-by-play logs — the next step was to explore it. Static Jupyter notebooks are fine for one-off analysis, but comparing players across dozens of stats, or checking how a specific lineup or game unfolded, quickly becomes tedious when you have to re-run cells and tweak filters by hand.&lt;/p&gt;
+&lt;p&gt;I built a small &lt;a href="https://bokeh.org/"&gt;Bokeh&lt;/a&gt; application that loads the same CSVs used in the &lt;a href="https://github.com/jecutter/nba-data-models/tree/master/Data_Exploration"&gt;Data_Exploration&lt;/a&gt; notebooks and exposes them through three interactive tabs: &lt;strong&gt;Player Stats&lt;/strong&gt;, &lt;strong&gt;Lineup Stats&lt;/strong&gt;, and &lt;strong&gt;Game Play-By-Play&lt;/strong&gt;. The app runs locally (&lt;code&gt;bokeh serve --show bokeh_app/&lt;/code&gt;) and lets you filter and plot without touching code.&lt;/p&gt;
+&lt;h2 id="how-the-app-is-structured"&gt;How the App Is Structured&lt;/h2&gt;
+&lt;p&gt;The app lives under &lt;code&gt;bokeh_app/&lt;/code&gt; in the &lt;a href="https://github.com/jecutter/nba-data-models"&gt;nba-data-models&lt;/a&gt; repo. &lt;code&gt;main.py&lt;/code&gt; reads three datasets: a merged player-season CSV (combining draft combine, bios, and advanced stats), a lineup-stats CSV, and a play-by-play CSV that includes per-stint plus-minus and possession counts. Each tab is implemented in its own module under &lt;code&gt;tabs/&lt;/code&gt; and returns a Bokeh &lt;code&gt;Panel&lt;/code&gt;; the main script assembles them into a single &lt;code&gt;Tabs&lt;/code&gt; widget.&lt;/p&gt;
+&lt;h2 id="player-stats-tab"&gt;Player Stats Tab&lt;/h2&gt;
+&lt;p&gt;The player tab uses the same kind of data explored in &lt;code&gt;Player_Data_Exploration.ipynb&lt;/code&gt;: hundreds of columns per player-season (shot location frequencies, rates, play-type usage, defensive metrics, etc.). The UI provides:&lt;/p&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;strong&gt;Filters:&lt;/strong&gt; player name (substring), team, season range, and age range.&lt;/li&gt;
+&lt;li&gt;&lt;strong&gt;Axis dropdowns:&lt;/strong&gt; any two columns can be chosen as x and y for a scatter plot.&lt;/li&gt;
+&lt;/ul&gt;
+&lt;p&gt;Points matching the current filters are highlighted in red and listed in a data table; the rest stay in the background in grey. That makes it easy to compare a single player across seasons or to see how they sit relative to the league in any two stats (e.g. frequency of shots at the rim vs. from beyond 24 feet).&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/nba_stats_explorer/nba_stats_explorer_curry_player_ex.png"&gt;
+&lt;img src="/files/nba_stats_explorer/nba_stats_explorer_curry_player_ex.png" alt="Player Stats tab example with Stephen Curry selected." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Player Stats tab: filtering by "curry" and plotting shot frequency at the rim (x) vs. beyond 24 ft (y). Selected player-seasons appear in red and in the table.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h2 id="lineup-stats-tab"&gt;Lineup Stats Tab&lt;/h2&gt;
+&lt;p&gt;The lineup tab is driven by the same aggregated lineup data used in &lt;code&gt;Lineup_Data_Exploration.ipynb&lt;/code&gt;. You can restrict by team, season range, and “lineup contains player” (substring on the lineup name). Again, x and y are any two columns — e.g. points per 100 (GPT) vs. net rating (NETRTGT). The scatter plot and table show only lineups that pass the filters, so you can quickly see how lineups that include a given player perform in different metric spaces.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/nba_stats_explorer/nba_stats_explorer_curry_lineup_ex.png"&gt;
+&lt;img src="/files/nba_stats_explorer/nba_stats_explorer_curry_lineup_ex.png" alt="Lineup Stats tab example with Curry lineups." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Lineup Stats tab: lineups containing "curry", with GPT vs. NETRTGT. Useful for checking which Curry lineups are most effective.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h2 id="game-play-by-play-tab"&gt;Game Play-By-Play Tab&lt;/h2&gt;
+&lt;p&gt;The play-by-play tab is tied to the stint-level data and logic in &lt;code&gt;PlayByPlay_Data_Exploration.ipynb&lt;/code&gt;. You pick a team, season, and game number (1–82). The plot shows one chosen series (e.g. home-team margin) on the y-axis vs. time in seconds on the x-axis. An optional “stints containing player” field highlights stretches when that player is on the floor (box annotations), so you can visually tie runs or slumps to specific rotations.&lt;/p&gt;
+&lt;figure&gt;
+&lt;a href="/files/nba_stats_explorer/nba_stats_explorer_curry_pbp_ex.png"&gt;
+&lt;img src="/files/nba_stats_explorer/nba_stats_explorer_curry_pbp_ex.png" alt="Play-by-play tab example for a Warriors game with Curry stints highlighted." /&gt;
+&lt;/a&gt;
+&lt;figcaption&gt;Game Play-By-Play tab: score margin over time for a selected game, with Curry’s stints highlighted. Helps see how the game flowed when a given player was on the court.&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;h2 id="why-this-is-useful"&gt;Why This Is Useful&lt;/h2&gt;
+&lt;p&gt;The Python notebooks do the heavy lifting for data scraping and aggregation: defining data cuts, computing correlations, and performing clustering (e.g. by position). The Bokeh app doesn’t replace that; it turns the same CSVs into a quick exploration front end.&lt;/p&gt;
+&lt;p&gt;You can try many axis pairs and filters without re-running code, compare a player’s lineups or their presence in a specific game, and sanity-check patterns before digging into analytics or modeling (e.g. the &lt;a href="/blog/rapm-model/"&gt;RAPM&lt;/a&gt; or &lt;a href="/blog/player-comp/"&gt;player comp&lt;/a&gt; work).&lt;/p&gt;
+&lt;p&gt;All of the code — scraping, exploration notebooks, and the Bokeh app — is in the &lt;a href="https://github.com/jecutter/nba-data-models"&gt;nba-data-models&lt;/a&gt; repository.&lt;/p&gt;</content><category term="Sports Data Science"/></entry></feed>
